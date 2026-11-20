@@ -1,0 +1,148 @@
+{
+  "id": "creativeTaskWf01",
+  "name": "WF-C · Task assigned",
+  "active": false,
+  "versionId": "46870dfe-e11f-4368-bf6a-5ea05bbbb1af",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "nodes": [
+    {
+      "name": "Signed event",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "creative-task-assigned",
+        "authentication": "jwtAuth",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "credentials": {
+        "jwtAuth": {
+          "id": "creativeJwtAuth01",
+          "name": "Creative signed dispatcher"
+        }
+      },
+      "webhookId": "cb667a8a-c942-478a-925b-e8aca781071d",
+      "id": "99bfc6f8-3b6a-4268-833d-bbc85b5d7861",
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "Register run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:8000/api/v1/internal/workflow-runs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { raw: JSON.stringify($json.body), timestamp: $json.headers['x-creative-timestamp'], signature: $json.headers['x-creative-signature'], execution_id: String($execution.id), workflow: 'WF-C' } }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "creativeCallback1",
+          "name": "Creative workflow callbacks"
+        }
+      },
+      "id": "61c17ff4-4d1e-45ca-be8c-745ff60d2128",
+      "position": [
+        260,
+        0
+      ]
+    },
+    {
+      "name": "Deliver to development inbox",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "=http://backend:8000/api/v1/internal/workflow-runs/{{ $json.run_id }}/notifications",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "creativeCallback1",
+          "name": "Creative workflow callbacks"
+        }
+      },
+      "id": "c372b7d3-6e55-466c-81f9-2dfd919dfd80",
+      "position": [
+        520,
+        0
+      ]
+    },
+    {
+      "name": "Record outcome",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "=http://backend:8000/api/v1/internal/workflow-runs/{{ $json.run_id }}/outcome",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { status:'completed' } }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "creativeCallback1",
+          "name": "Creative workflow callbacks"
+        }
+      },
+      "id": "c3b9a704-5577-4b18-8af1-79af1f491d2b",
+      "position": [
+        780,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Signed event": {
+      "main": [
+        [
+          {
+            "node": "Register run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Register run": {
+      "main": [
+        [
+          {
+            "node": "Deliver to development inbox",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deliver to development inbox": {
+      "main": [
+        [
+          {
+            "node": "Record outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
