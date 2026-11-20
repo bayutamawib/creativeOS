@@ -16,6 +16,7 @@ from app.brief_models import BriefFile, FileAsset, SnapshotFile
 from app.config import settings
 from app.models import Project
 from app.project_inputs import Portal
+from app.review_models import Review, RevisionFile
 from app.security import now
 from app.services import agency, projects
 from app.services.drive import DriveStorage
@@ -161,7 +162,12 @@ def visible(
         projects.access(db, actor, project_id, portal)
         stmt = stmt.where(FileAsset.project_id == project_id)
     if portal == "client":
-        stmt = stmt.where(FileAsset.visibility == "client_visible")
+        released = (
+            select(RevisionFile.file_id)
+            .join(Review, Review.revision_id == RevisionFile.revision_id)
+            .where(Review.stage == "client")
+        )
+        stmt = stmt.where((FileAsset.visibility == "client_visible") | FileAsset.id.in_(released))
     return stmt
 
 
@@ -193,8 +199,10 @@ def archive(db: Session, actor: UUID, key: UUID) -> None:
     row = get(db, actor, key, "agency")
     agency.guard_operational_write(db)
     p = projects.access(db, actor, row.project_id, "agency", write=True)
-    if db.scalar(select(BriefFile.id).where(BriefFile.file_id == key).limit(1)) or db.scalar(
-        select(SnapshotFile.id).where(SnapshotFile.file_id == key).limit(1)
+    if (
+        db.scalar(select(RevisionFile.file_id).where(RevisionFile.file_id == key).limit(1))
+        or db.scalar(select(BriefFile.id).where(BriefFile.file_id == key).limit(1))
+        or db.scalar(select(SnapshotFile.id).where(SnapshotFile.file_id == key).limit(1))
     ):
         raise HTTPException(409, "Referenced files must be retained")
     row.archived_at = now()

@@ -92,3 +92,11 @@ python3 scripts/verify_workflow.py creative_direction.approved <direction-propos
 ```
 
 From `frontend/`, running `CP3_TEST_WORKER_RESTART=1 PLAYWRIGHT_CHANNEL=chrome npm run test:e2e -- studio.spec.ts` also stops the local worker, queues one job, restarts the worker and waits for the same job to complete.
+
+## Content reviews and reminders
+
+Open **Approvals** in the agency portal to edit a revision, attach private project files and submit it for internal review. An Admin or Agency Manager can request changes or choose **Approve & Release to Client**. The confirmation identifies the exact revision. Opening or dismissing it leaves the draft private. The client portal shows the released versions. Client Admins and active project delegates can sign or request changes. Other active members can comment.
+
+The local **Inbox** receives release, decision and deadline notifications. Agency managers and admins can inspect event delivery and n8n execution IDs in **Automation**. Set `AGENCY_TIMEZONE` to an IANA zone and `REMINDER_CRON` to the n8n cron schedule. The local Compose default scans every minute so changes are visible during testing. For a daily scan at 09:00 use `REMINDER_CRON="0 9 * * *"`. Recreate the services after changing the environment. Deduplication uses the agency-local day. Keep the minute schedule for the Chrome deadline journey.
+
+Run `sh scripts/test_backend.sh` for isolated PostgreSQL verification. In `frontend/`, `CP4_TEST_WORKER_RESTART=1 PLAYWRIGHT_CHANNEL=chrome npm run test:e2e` also verifies release delivery across a worker stop/start. The browser tests use fixture AI and the local development inbox.

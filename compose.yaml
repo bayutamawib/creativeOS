@@ -4,6 +4,7 @@ x-app: &app
   build: ./backend
   environment: &app-env
     APP_ENV: development
+    AGENCY_TIMEZONE: ${AGENCY_TIMEZONE:-Asia/Jakarta}
     AI_PROVIDER: ${AI_PROVIDER:-fixture}
     AI_MODEL: ${AI_MODEL:-fixture-v1}
     AI_ENDPOINT: ${AI_ENDPOINT:-}
@@ -57,6 +58,7 @@ services:
     <<: *app
     command: ["python", "-m", "app.worker"]
     depends_on:
+      n8n: {condition: service_healthy}
       migrate: {condition: service_completed_successfully}
     healthcheck:
       test: ["CMD", "python", "-c", "import os,time; assert time.time()-os.stat('/tmp/creativeos-worker-heartbeat').st_mtime < 20"]
@@ -81,8 +83,9 @@ services:
       WEBHOOK_KEY: ${WEBHOOK_KEY:?run scripts/init_env.py}
       WORKFLOW_KEY: ${WORKFLOW_KEY:?run scripts/init_env.py}
       N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?run scripts/init_env.py}
-      GENERIC_TIMEZONE: Asia/Jakarta
-      TZ: Asia/Jakarta
+      GENERIC_TIMEZONE: ${AGENCY_TIMEZONE:-Asia/Jakarta}
+      REMINDER_CRON: ${REMINDER_CRON:-* * * * *}
+      TZ: ${AGENCY_TIMEZONE:-Asia/Jakarta}
       N8N_DIAGNOSTICS_ENABLED: "false"
       N8N_PERSONALIZATION_ENABLED: "false"
       N8N_VERSION_NOTIFICATIONS_ENABLED: "false"

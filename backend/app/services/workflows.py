@@ -22,11 +22,15 @@ from app.models import AgencyMembership, Project, User
 from app.operations_models import Lead, Notification, Outbox, ProcessedEvent, WorkflowRun
 from app.project_models import Task, TaskAssignee
 from app.security import now
-from app.services import agency
+from app.services import agency, reminders, review_notifications
 
 ROUTES = {
     "brief.approved": ("WF-B", "creative-brief-approved"),
     "creative_direction.approved": ("WF-B", "creative-direction-approved"),
+    "content.client_review_requested": ("WF-B", "creative-content-review"),
+    "content.client_approved": ("WF-B", "creative-content-review"),
+    "content.revision_requested": ("WF-B", "creative-content-review"),
+    "task.deadline_reminder": ("WF-C", "creative-task-reminder"),
     "lead.created": ("WF-A", "creative-lead-created"),
     "task.assigned": ("WF-C", "creative-task-assigned"),
 }
@@ -99,10 +103,18 @@ def run_context(db: Session, run_id: UUID) -> tuple[WorkflowRun, Outbox]:
     if not event_id:
         raise HTTPException(404, "Run not found")
     event = db.get_one(Outbox, event_id, with_for_update=True)
-    return db.get_one(WorkflowRun, run_id, with_for_update=True), event
+    run = db.get_one(WorkflowRun, run_id, with_for_update=True)
+    if event.event_type.startswith("content.") or event.event_type == "task.deadline_reminder":
+        if run.attempt != event.attempts or run.status not in {"running", "completed"}:
+            raise HTTPException(409, "Workflow attempt is closed")
+    return run, event
 
 
 def eligible(db: Session, event: Outbox) -> tuple[set[UUID], str]:
+    if event.event_type == "task.deadline_reminder":
+        return reminders.recipients(db, event)
+    if event.event_type.startswith("content."):
+        return review_notifications.eligible(db, event)
     if event.event_type == "lead.created" and db.get(Lead, event.aggregate_id) is not None:
         ids = db.scalars(
             select(AgencyMembership.user_id)

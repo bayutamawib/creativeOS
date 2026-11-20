@@ -1,3 +1,4 @@
+import { reviewCycle } from "./review-cycle";
 import { expect, test } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
@@ -116,6 +117,7 @@ test("approved brief reaches human selection, project tasks and a revised intern
         jobId,
       );
     }
+    await reviewCycle(manager,page,final.items[0].id,title);
   } finally {
     await manager.close();
   }

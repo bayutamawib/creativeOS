@@ -14,6 +14,7 @@ JOIN workflow_runs r ON r.event_id = e.id AND r.status = 'completed'
 JOIN processed_events s ON s.event_id = e.id AND s.consumer_name = 'development-inbox'
 JOIN notifications n ON n.event_id = e.id AND n.delivery_status = 'delivered'
 WHERE e.aggregate_id = :'resource' AND e.event_type = :'kind' AND e.status = 'delivered'
+AND (:'revision' = '' OR e.payload->>'revision_id' = :'revision')
 GROUP BY e.id, r.n8n_execution_id, e.created_at
 ORDER BY e.created_at DESC LIMIT 1;
 """
@@ -39,6 +40,10 @@ def compose(*args, stdin=None):
 
 
 WORKFLOWS = {
+    "content.client_review_requested": "creativeReviewW01",
+    "content.revision_requested": "creativeReviewW01",
+    "content.client_approved": "creativeReviewW01",
+    "task.deadline_reminder": "creativeDueWf01",
     "lead.created": "creativeLeadWf01",
     "task.assigned": "creativeTaskWf01",
     "brief.approved": "creativeBriefWf01",
@@ -60,9 +65,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("event_type", choices=WORKFLOWS)
     parser.add_argument("resource_id", type=UUID)
+    parser.add_argument("--revision", type=UUID)
     args = parser.parse_args()
     workflow = WORKFLOWS[args.event_type]
-    end = time.monotonic() + 35
+    end = time.monotonic() + (100 if args.event_type == "task.deadline_reminder" else 35)
     while time.monotonic() < end:
         result = compose(
             "postgres",
@@ -78,6 +84,8 @@ def main():
             f"resource={args.resource_id}",
             "-v",
             f"kind={args.event_type}",
+            "-v",
+            f"revision={args.revision or ''}",
             "-f",
             "-",
             stdin=SQL,
@@ -86,6 +94,27 @@ def main():
             event, execution, count = result.split("|")
             if compose("n8n", "node", "-e", N8N, execution, workflow) == "success":
                 evidence = ""
+                if args.event_type == "task.deadline_reminder":
+                    timer = compose(
+                        "postgres",
+                        "psql",
+                        "-XAt",
+                        "-U",
+                        "postgres",
+                        "-d",
+                        "creativeos",
+                        "-v",
+                        f"event={event}",
+                        "-f",
+                        "-",
+                        stdin="SELECT r.n8n_execution_id FROM outbox_events e JOIN workflow_runs r ON r.id=(e.payload->>'scan_run_id')::uuid JOIN outbox_events s ON s.id=r.event_id WHERE e.id=:'event' AND r.status='completed' AND s.event_type='deadline.scan';",
+                    )
+                    if (
+                        not timer
+                        or compose("n8n", "node", "-e", N8N, timer, "creativeTimerW01") != "success"
+                    ):
+                        raise SystemExit("Missing successful schedule execution")
+                    evidence = f", originating schedule execution {timer}"
                 if args.event_type in STAGES:
                     rows = compose(
                         "postgres",

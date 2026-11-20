@@ -413,6 +413,10 @@ def save_copy(db: Session, actor: UUID, key: UUID, generation_id: UUID) -> Conte
     )
     db.add(rev)
     db.flush()
+    from app.services.reviews import link_files, supersede
+
+    link_files(db, item, parent.id, rev.id)
+    supersede(db, item)
     item.current_revision_id = rev.id
     projects.change_log(
         db, actor, db.get_one(Project, item.project_id), "content.revision_saved", rev.id

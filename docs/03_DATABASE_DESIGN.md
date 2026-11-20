@@ -482,7 +482,7 @@ Represents a creative deliverable, such as a social media post, caption, campaig
 | status | VARCHAR(30) | Current review stage |
 | created_at / updated_at | TIMESTAMPTZ | Creation / last change |
 
-Stages are `draft`, `internal_review`, `internally_approved`, `client_review`, `revision_requested`, `approved`, and `rejected`. In one transaction insert the item with a null pointer, insert revision 1, then set the pointer. Use a composite FK from (item ID, current revision ID) to (content item ID, revision ID). Serialize revision creation and approval on the item. Every committed deliverable has a current revision.
+Stages are `draft`, `internal_review`, `client_review`, `revision_requested`, `approved`, and `rejected`. In one transaction insert the item with a null pointer, insert revision 1, then set the pointer. Use a composite FK from (item ID, current revision ID) to (content item ID, revision ID). Serialize revision creation and approval for the item. Approve & Release records an approved internal-stage row and a pending client-stage row for the exact revision in the same transaction. Every committed deliverable has a current revision.
 
 #### `content_revisions`
 

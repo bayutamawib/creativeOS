@@ -510,13 +510,11 @@ The default agency timezone should be configurable, with `Asia/Jakarta` as an in
 
 ### 14.2 Node sequence
 
-1. Schedule Trigger.
-2. HTTP Request — call protected deadline-check endpoint.
-3. Receive eligible upcoming and overdue tasks.
-4. Loop Over Items — process notification candidates.
-5. IF — determine notification type.
-6. Telegram / Gmail — send reminder.
-7. HTTP Request — record delivery outcome.
+1. The n8n Schedule Trigger starts an execution in the configured agency timezone.
+2. An authenticated HTTP request passes the n8n execution ID to FastAPI. FastAPI derives the date, checks assignments and reserves recipient-specific events in PostgreSQL.
+3. The dispatcher sends each reserved event to the authenticated n8n reminder webhook.
+4. n8n registers the run and calls FastAPI for notification delivery. FastAPI checks the current deadline, local window, assignment and task state again.
+5. The local adapter writes recipient inbox rows and a processing receipt atomically. n8n returns the run outcome to the dispatcher.
 
 ### 14.3 Deadline rules
 

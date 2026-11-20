@@ -7,6 +7,7 @@ from sqlalchemy import URL
 
 
 class Settings(BaseSettings):
+    agency_timezone: str = "Asia/Jakarta"
     ai_provider: Literal["fixture", "compatible"] = "fixture"
     ai_model: str = "fixture-v1"
     ai_endpoint: str = ""

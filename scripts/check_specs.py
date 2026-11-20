@@ -82,6 +82,8 @@ def check_permission_matrix(path):
     roles = ["Admin", "Manager", "Team Member", "Client Admin", "Client Member", "Delegated"]
     # Approved P1/P2 cases. Every unlisted role must be explicitly denied.
     allowed = {
+        "Submit revision for internal review": {"Admin","Manager","Team Member"},
+        "Approve and release or request internal changes": {"Admin","Manager"},
         "Manage Team Member membership": {"Admin", "Manager"},
         "Manage Admin or Manager roles": {"Admin"},
         "Manage authentication or security settings": {"Admin"},
@@ -104,6 +106,8 @@ def check_permission_matrix(path):
         require(len(cells) == len(roles), f"{path.name}: role count for {action}")
         for role, cell in zip(roles, cells):
             expected = "Allowed" if role in allowed[action] else "Denied"
+            if role=="Team Member" and action=="Submit revision for internal review":
+                expected="Assigned projects"
             if role == "Manager" and action == "Manage Team Member membership":
                 expected = "Team targets only"
             require(cell == expected, f"{path.name}: {role} / {action} must be {expected}")

@@ -2,15 +2,18 @@ from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Header
+from pydantic import Field
 from sqlalchemy import select
 
 from app.ai_models import ContentItem, ContentRevision, Generation, Proposal
 from app.api.deps import Database, Identity
+from app.brief_inputs import Paragraph, Short
 from app.brief_models import Snapshot
 from app.config import settings
 from app.operations_models import Outbox, WorkflowRun
+from app.project_inputs import Portal
 from app.schemas import Input
-from app.services import briefs, projects, studio
+from app.services import briefs, projects, reviews, studio
 
 router = APIRouter()
 Key = Annotated[str, Header(alias="Idempotency-Key", min_length=1, max_length=120)]
@@ -89,6 +92,13 @@ class FromProposal(Input):
     proposal_id: UUID
 
 
+class Edit(Input):
+    attachment_ids: list[UUID] | None = Field(None, max_length=20)
+    revision_id: UUID
+    headline: Short
+    caption: Paragraph
+
+
 class FromGeneration(Input):
     generation_id: UUID
 
@@ -105,7 +115,12 @@ def create_draft(
 
 
 @router.get("/projects/{project_id}/content-items")
-def drafts(project_id: UUID, db: Database, identity: Identity) -> dict[str, Any]:
+def drafts(
+    project_id: UUID, db: Database, identity: Identity, portal: Portal | None = None
+) -> dict[str, Any]:
+    if projects.effective_portal(db, identity.user_id, portal) == "client":
+        projects.access(db, identity.user_id, project_id, "client")
+        return {"data": reviews.listing(db, identity.user_id, "client", project_id)}
     projects.access(db, identity.user_id, project_id)
     return {
         "data": [
@@ -120,7 +135,18 @@ def drafts(project_id: UUID, db: Database, identity: Identity) -> dict[str, Any]
 
 
 @router.get("/content-items/{content_id}")
-def draft(content_id: UUID, db: Database, identity: Identity) -> dict[str, Any]:
+def draft(
+    content_id: UUID, db: Database, identity: Identity, portal: Portal | None = None
+) -> dict[str, Any]:
+    if projects.effective_portal(db, identity.user_id, portal) == "client":
+        return {
+            "data": reviews.view(
+                db,
+                identity.user_id,
+                reviews.item_for(db, identity.user_id, content_id, "client"),
+                "client",
+            )
+        }
     return {"data": studio.item_view(db, studio.item_context(db, identity.user_id, content_id))}
 
 
@@ -135,8 +161,20 @@ def copywriting(
 
 @router.post("/content-items/{content_id}/revisions", status_code=201)
 def save_suggestion(
-    content_id: UUID, data: FromGeneration, db: Database, identity: Identity
+    content_id: UUID, data: FromGeneration | Edit, db: Database, identity: Identity
 ) -> dict[str, Any]:
+    if isinstance(data, Edit):
+        item = studio.item_context(db, identity.user_id, content_id, True)
+        reviews.append(
+            db,
+            identity.user_id,
+            item,
+            data.revision_id,
+            data.headline,
+            data.caption,
+            data.attachment_ids,
+        )
+        return {"data": studio.item_view(db, item)}
     return {
         "data": studio.item_view(
             db, studio.save_copy(db, identity.user_id, content_id, data.generation_id)
@@ -145,7 +183,18 @@ def save_suggestion(
 
 
 @router.get("/content-items/{content_id}/revisions")
-def revisions(content_id: UUID, db: Database, identity: Identity) -> dict[str, Any]:
+def revisions(
+    content_id: UUID, db: Database, identity: Identity, portal: Portal | None = None
+) -> dict[str, Any]:
+    if projects.effective_portal(db, identity.user_id, portal) == "client":
+        return {
+            "data": reviews.view(
+                db,
+                identity.user_id,
+                reviews.item_for(db, identity.user_id, content_id, "client"),
+                "client",
+            )["history"]
+        }
     studio.item_context(db, identity.user_id, content_id)
     rows = db.scalars(
         select(ContentRevision)

@@ -22,9 +22,11 @@ export default async function Page() {
               href={
                 n.resource_type === "lead"
                   ? "/admin/leads/" + n.resource_id
-                  : n.resource_type === "task"
-                    ? "/admin/tasks"
-                    : "/admin/creative-studio?brief=" + n.brief_id
+                  : n.resource_type === "content_item"
+                    ? "/admin/approvals?item=" + n.resource_id
+                    : n.resource_type === "task"
+                      ? "/admin/tasks"
+                      : "/admin/creative-studio?brief=" + n.brief_id
               }
             >
               {n.message}

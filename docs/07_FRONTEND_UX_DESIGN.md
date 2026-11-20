@@ -354,6 +354,8 @@ Render the controls below from FastAPI’s permitted actions for the selected po
 
 | Operation | Admin | Manager | Team Member | Client Admin | Client Member | Delegated |
 |---|---|---|---|---|---|---|
+| Submit revision for internal review | Allowed | Allowed | Assigned projects | Denied | Denied | Denied |
+| Approve and release or request internal changes | Allowed | Allowed | Denied | Denied | Denied | Denied |
 | Manage Team Member membership | Allowed | Team targets only | Denied | Denied | Denied | Denied |
 | Manage Admin or Manager roles | Allowed | Denied | Denied | Denied | Denied | Denied |
 | Manage authentication or security settings | Allowed | Denied | Denied | Denied | Denied | Denied |
@@ -894,7 +896,7 @@ Show:
 - Client feedback.
 - Approval actions.
 
-The approval interface must clearly distinguish internal approval from client approval.
+The Approve & Release to Client control opens a modal naming the deliverable and exact revision number and explaining client visibility. Cancel and Escape dismiss it locally. Only Confirm & Release submits the binding agency action. Request Internal Changes remains separate. Client Admins and project delegates then make the client decision on the released revision.
 
 ## 23. Automation Monitoring
 

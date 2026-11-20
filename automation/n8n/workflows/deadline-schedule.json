@@ -1,0 +1,70 @@
+{
+  "id": "creativeTimerW01",
+  "name": "WF-C \u00b7 Deadline schedule",
+  "versionId": "f38aeeff-c6d0-4e19-91bf-3938057bf30d",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "nodes": [
+    {
+      "id": "29f5c16c-43e7-45d9-b444-dc2d065e04af",
+      "name": "Deadline schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "Reserve reminders",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:8000/api/v1/internal/workflow-runs/deadline-scan",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { execution_id: String($execution.id) } }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "creativeCallback1",
+          "name": "Creative workflow callbacks"
+        }
+      },
+      "id": "a50bf039-214b-4289-971c-dd023b8d9bfa",
+      "position": [
+        260,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Deadline schedule": {
+      "main": [
+        [
+          {
+            "node": "Reserve reminders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

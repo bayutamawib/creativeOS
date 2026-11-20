@@ -89,7 +89,7 @@ Examples:
 - `POST /leads/{lead_id}/convert`
 - `POST /briefs/{brief_id}/approve`
 - `POST /content-items/{content_id}/generate`
-- `POST /content-items/{content_id}/submit-for-client-review`
+- `POST /content-items/{content_id}/approve-and-release`
 
 Do not implement important business transitions as arbitrary status updates.
 
@@ -245,6 +245,8 @@ FastAPI enforces the following permission matrix. Client columns require an acti
 
 | Operation | Admin | Manager | Team Member | Client Admin | Client Member | Delegated |
 |---|---|---|---|---|---|---|
+| Submit revision for internal review | Allowed | Allowed | Assigned projects | Denied | Denied | Denied |
+| Approve and release or request internal changes | Allowed | Allowed | Denied | Denied | Denied | Denied |
 | Manage Team Member membership | Allowed | Team targets only | Denied | Denied | Denied | Denied |
 | Manage Admin or Manager roles | Allowed | Denied | Denied | Denied | Denied | Denied |
 | Manage authentication or security settings | Allowed | Denied | Denied | Denied | Denied | Denied |
@@ -611,8 +613,8 @@ Resolve each proposal’s owner and approved snapshot server-side. Analysis prec
 | PATCH | `/content-items/{content_id}` | Authorized Agency | Update content metadata |
 | GET | `/content-items/{content_id}/revisions` | Authorized Agency, Client | List permitted revisions |
 | POST | `/content-items/{content_id}/revisions` | Authorized Agency | Create revision |
-| POST | `/content-items/{content_id}/internal-approval` | Authorized Agency | Record internal approval |
-| POST | `/content-items/{content_id}/submit-for-client-review` | Authorized Agency | Make reviewed content available to client |
+| POST | `/content-items/{content_id}/request-internal-changes` | Admin, Agency Manager | Request internal changes with comments |
+| POST | `/content-items/{content_id}/approve-and-release` | Admin, Agency Manager | Atomically approve the pending internal revision and create its pending client release |
 | POST | `/content-items/{content_id}/client-approval` | Owning Client Admin or active project delegate | Approve the pending submitted revision |
 | POST | `/content-items/{content_id}/request-revision` | Owning Client Admin or active project delegate | Record a binding revision request with feedback |
 | GET | `/content-items/{content_id}/feedback` | Authorized Agency, Client | Retrieve permitted feedback |
@@ -620,23 +622,23 @@ Resolve each proposal’s owner and approved snapshot server-side. Analysis prec
 
 ### Revision lifecycle
 
-`POST /content-items/{content_id}/submit-for-internal-review` takes revision_id and creates a pending internal approval for the current draft. Internal approval accepts approved, rejected or revision_requested. Only an internally approved current revision may enter client_review. Submission creates a pending client-stage approval. A revision request requires meaningful feedback. A newer revision supersedes pending reviews and re-enters draft. Recheck the current revision and pending stage under the item lock before accepting a decision. Return 409 for a stale or already decided review. Clients can view released revisions, with client-visible feedback, and act only on the active release. Never resolve a client preview via an unfiltered current_revision_id.
+`POST /content-items/{content_id}/submit-for-internal-review` takes revision_id and creates a pending internal approval for the current draft. A manager or admin requests internal changes with feedback, or confirms approval and release. The latter action resolves the internal review and creates the client-stage review, audit and event in one transaction. A revision request requires meaningful feedback. A newer revision supersedes pending reviews and re-enters draft. Recheck the current revision and pending stage under the item lock before accepting a decision. Return 409 for a stale or already decided review. Clients can view released revisions, with client-visible feedback, and act only on the active release. Never resolve a client preview via an unfiltered current_revision_id.
 
-### Internal approval request
+### Request internal changes
 
-`POST /content-items/{content_id}/internal-approval`
+`POST /content-items/{content_id}/request-internal-changes`
 
 ```json
 {
   "revision_id": "revision-uuid",
-  "decision": "approved",
-  "comments": "The copy and visual direction are ready for client review."
+  "decision": "revision_requested",
+  "comments": "Clarify the opening sentence."
 }
 ```
 
 ### Submit for client review
 
-`POST /content-items/{content_id}/submit-for-client-review`
+`POST /content-items/{content_id}/approve-and-release`
 
 ```json
 {
@@ -792,7 +794,7 @@ The dispatcher sends the persisted event envelope to a configured n8n webhook UR
 | POST | `/internal/workflow-runs` | Start or retrieve run using workflow ID/version and stored event ID or schedule window |
 | POST | `/internal/workflow-runs/{run_id}/generations` | Enqueue the eligible analysis, direction or plan step for this run |
 | GET | `/internal/workflow-runs/{run_id}/generations/{generation_id}` | Poll only a generation belonging to this run |
-| POST | `/internal/workflow-runs/{run_id}/deadline-check` | Return eligible reminder candidates for the scheduled window |
+| POST | `/internal/workflow-runs/deadline-scan` | Register the authenticated schedule execution and reserve eligible reminder events for its server-derived agency date in one transaction |
 | POST | `/internal/workflow-runs/{run_id}/reports` | Create or retrieve period reports for eligible projects |
 | GET | `/internal/workflow-runs/{run_id}/reports` | Poll statuses of this run’s reports |
 | POST | `/internal/workflow-runs/{run_id}/notifications` | Reserve eligible deliveries and return minimum destination and message data |
@@ -908,11 +910,8 @@ sequenceDiagram
     A->>API: Create content revision
     API->>DB: Save immutable revision
 
-    A->>API: Internal approval
-    API->>DB: Save internal decision
-
-    A->>API: Submit for client review
-    API->>DB: Update review state
+    A->>API: Confirm approval and release of the displayed revision
+    API->>DB: Commit internal decision, pending client review, audit and event
 
     C->>API: Approve or request revision
     API->>DB: Save client decision

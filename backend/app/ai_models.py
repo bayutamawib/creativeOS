@@ -116,7 +116,7 @@ class ContentRevision(Entity):
     revision_number: Mapped[int]
     content: Mapped[dict[str, Any]] = mapped_column(JSONB)
     created_by: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
-    source_generation_id: Mapped[UUID] = mapped_column(ForeignKey("ai_generations.id"))
+    source_generation_id: Mapped[UUID | None] = mapped_column(ForeignKey("ai_generations.id"))
     __table_args__ = (
         UniqueConstraint("content_item_id", "revision_number"),
         UniqueConstraint("content_item_id", "id"),

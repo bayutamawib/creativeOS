@@ -51,7 +51,7 @@ Both interfaces share a centralized backend and database.
 ### Team Member
 - View assigned tasks.
 - Update task status.
-- Submit deliverables.
+- Create and edit draft deliverables on assigned projects and submit exact revisions for internal review.
 - Receive notifications.
 - Collaborate on projects.
 
@@ -61,6 +61,8 @@ Both interfaces share a centralized backend and database.
 - Review reports.
 - Manage project assignments, tasks, workflows and non-security operational settings.
 - Invite, activate or deactivate Team Members and grant or revoke the Team Member role. Admin and Agency Manager roles, elevated accounts and the manager’s own privileges are outside this authority.
+
+Only Admins and Agency Managers may request internal changes or approve and release a pending revision. Approval and release are one confirmed action. Client sign-off is a separate human decision.
 
 FastAPI checks current authority on every mutation. Record membership and role changes, project approval grants and revocations, and binding client decisions in the audit log. A client review admits a single decision on the exact submitted revision.
 

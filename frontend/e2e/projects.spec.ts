@@ -18,6 +18,9 @@ test("agency project management, task notification and client-safe milestones", 
   page,
   browser,
 }) => {
+  test.setTimeout(180000);
+  // A date two days ago is overdue in every supported agency timezone.
+  const deadline = new Date(Date.now() - 2 * 86400000).toISOString().slice(0, 10);
   const suffix = randomUUID(),
     project = "Z Campaign " + suffix,
     task = "Internal production " + suffix,
@@ -51,7 +54,7 @@ test("agency project management, task notification and client-safe milestones", 
   ).toBeVisible();
   await page.getByText("Add task", { exact: true }).click();
   await page.getByLabel("Task title").fill(task);
-  await page.getByLabel("Task deadline").fill("2027-04-12");
+  await page.getByLabel("Task deadline").fill(deadline);
   await page.getByRole("button", { name: "Create task" }).click();
   await expect(page.getByRole("heading", { name: task })).toBeVisible();
   await page.getByRole("button", { name: "Assign task", exact: true }).click();
@@ -84,10 +87,21 @@ test("agency project management, task notification and client-safe milestones", 
       { timeout: 30000 },
     )
     .toBe(true);
+  console.log(
+    execFileSync(
+      "python3",
+      ["../scripts/verify_workflow.py", "task.deadline_reminder", id],
+      { encoding: "utf8" },
+    ).trim(),
+  );
+  await producer.reload();
+  await expect(
+    producer.getByRole("link", { name: new RegExp(task) }),
+  ).toBeVisible();
   await producer.goto(projectPath);
   await producer.getByLabel("Task status").selectOption("completed");
   await producer.getByRole("button", { name: "Update task status" }).click();
-  await expect(producer.getByText("completed · 2027-04-12")).toBeVisible();
+  await expect(producer.getByText("completed · " + deadline)).toBeVisible();
   const client = await browser.newPage();
   await login(client, "publisher");
   await client.getByRole("link", { name: "Projects", exact: true }).click();

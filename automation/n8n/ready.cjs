@@ -20,6 +20,10 @@ async function ready() {
     return readdirSync(dir).filter((file) => file.endsWith(".json")).every((file) => {
       const workflow = JSON.parse(readFileSync(join(dir, file), "utf8"));
       const trigger = workflow.nodes.find((n) => n.type === "n8n-nodes-base.webhook");
+      if (!trigger) {
+        return workflow.nodes.some(n => n.type === "n8n-nodes-base.scheduleTrigger") &&
+          !!db.prepare("SELECT 1 FROM workflow_entity WHERE id=? AND active=1 AND activeVersionId IS NOT NULL").get(workflow.id);
+      }
       return !!registered.get(workflow.id, trigger.parameters.path, trigger.parameters.httpMethod);
     });
   } finally {

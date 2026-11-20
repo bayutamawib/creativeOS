@@ -1023,3 +1023,4 @@ Do not claim:
 The final deliverable is a reproducible, working, secure MVP suitable for an AI Automation & System Integration Engineering portfolio.
 
 **CREATIVE OS must demonstrate real integration engineering, measurable AI behavior, and reliable business workflow automation.**
+CP4 release verification covers cancel and Escape without writes, exact title and version on confirmation, assigned staff submission and release denial, atomic rollback, concurrent submissions and separate client sign-off.

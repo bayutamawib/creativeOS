@@ -1,5 +1,48 @@
 # CREATIVE OS — Implementation status
 
+## CP4 Content Approval and Operational Automation
+
+**CP4 VERIFIED on the local stack.** CP4-A passed before CP4-B began. All five Compose services are healthy. CP5 awaits explicit authorization.
+
+**Preflight passed.** Reviewed the CP3 inventory and checked the diff, staged paths and staged bytes for generated credentials, demo passwords, private keys and sensitive paths. Created local baseline `c28175d` from 57 changed files. No remote was configured. Existing PostgreSQL and n8n volumes were preserved.
+
+### CP4-A · VERIFIED
+
+Added revision-bound reviews and feedback, recorded signer membership and delegation, historical release projections, revision attachments and human editing. The CP3 copy-save path also supersedes pending reviews. The agency queue and client approvals page use backend-permitted actions. ADR-026 records the confirmed release policy, now reflected in the PRD, API and frontend matrices, database contract and acceptance specification.
+
+Changed migrations `0009_reviews` and `0010_revision_files`, Alembic metadata, the content revision model, review models/services/API, Studio and file services, portal navigation and approvals pages, the review queue component, PostgreSQL and browser tests, and the specification checker.
+
+`docker compose up -d --build --wait`, `sh scripts/test_backend.sh`, frontend ESLint, TypeScript, Vitest, Playwright, the smoke probe and specification checker passed. The fresh PostgreSQL run passed **48 tests** including release rollback, two concurrent releases, opposing client decisions, revocation racing sign-off, inactive membership, internal-file visibility and supersession. **Eight Chrome journeys** passed in 46.1 seconds. The review journey cancelled with both Cancel and Escape, verified the client still could not see the draft, confirmed revision 2, requested changes as the client and approved the separately released revision 3. Both Vitest tests passed. The specification checker verified 132 matrix entries. One upstream Starlette TestClient deprecation warning.
+
+### CP4-B · VERIFIED
+
+Three new n8n definitions implement review notifications, deadline scans and reminder delivery. The timer authenticates to FastAPI and records its n8n execution ID with durable reminder reservations. The dispatcher sends signed webhook requests. FastAPI checks the exact release, current membership, task state and assignments at delivery. Local delivery records and processing receipts share a transaction. Both portals expose the appropriate recipient inbox. Admins and Agency Managers can inspect recent workflow activity.
+
+| Area | CP4 files created or modified |
+|---|---|
+| Schema and server | `backend/alembic/env.py`, `versions/{0009_reviews,0010_revision_files}.py`, `app/{ai_models,review_models,config,main}.py`, `app/api/{inbox,reviews,studio,workflows}.py`, `app/services/{assets,studio,reviews,review_notifications,reminders,workflows}.py` |
+| n8n and runtime | `automation/n8n/{bootstrap.sh,ready.cjs}`, `workflows/{approval-notifications,deadline-notifications,deadline-schedule}.json`, `compose.yaml`, `.env.example`. CP4-B uses the existing PostgreSQL outbox, workflow runs, processed events and notifications tables. |
+| Portals | Agency and client layouts, approvals and notifications pages, agency automation page and `frontend/components/review-queue.tsx` |
+| Verification and contracts | `backend/tests/{test_reviews,test_reminders}.py`, `frontend/e2e/{review-cycle.ts,projects.spec.ts,studio.spec.ts}`, `scripts/{verify_workflow,check_specs}.py`, README, specifications 01, 03, 04, 06, 07 and 09, this status report and ADR-026/027 |
+
+Final `sh scripts/test_backend.sh` built a fresh test schema inside a temporary Compose PostgreSQL database. Ruff passed, strict mypy passed for 53 application modules, migrations applied through `0010_revision_files` and Alembic detected no drift. **53 tests passed in 28.33 seconds**, with one upstream Starlette TestClient warning. The suite includes conflicting internal decisions, service-identity denial, parallel schedule callbacks, same-day delivery deduplication, Asia/Jakarta midnight and New York timezone checks, completed/unassigned task suppression, membership revocation, and recovery after a committed delivery loses its acknowledgment. CP1–CP3 tests ran in the same suite.
+
+`docker compose config --quiet`, `docker compose up -d --build --wait` and `python3 scripts/smoke.py` passed. Existing volumes were preserved. Frontend `npm run lint`, `npm run typecheck` and `npm test` passed, including both Vitest tests. `python3 scripts/check_specs.py` and `git diff --check` passed. An earlier concurrent regression run timed out awaiting the delegation control and caught a browser test reloading the inbox before navigation completed. The review test now waits for the exact notification destination.
+
+The final sequential run of `CP4_TEST_WORKER_RESTART=1 PLAYWRIGHT_CHANNEL=chrome npm run test:e2e` passed **all eight Chrome journeys in 1.4 minutes**. The browser confirmed revision 2 with the worker stopped, then followed the client inbox link after restart. The client requested changes, the agency edited and released revision 3, and the client approved it. The agency inbox and automation activity page showed the resulting decision.
+
+| Verified local operation | PostgreSQL event | n8n execution | Delivered inbox rows |
+|---|---|---:|---:|
+| Scheduled overdue reminder | `f634c625-7922-5f82-a65f-57a5ec47701f` | Schedule **57**, delivery **58** | 1 |
+| Revision 2 released across worker restart | `5585e969-72d5-4e93-9167-fa7e20d995b1` | **61** | 2 |
+| Client requested changes to revision 2 | `96504cdc-5f92-4406-9ce9-0d0615b8cf4f` | **62** | 2 |
+| Revision 3 released | `63de8a6d-6ca7-4840-8dd5-30c614536cac` | **63** | 2 |
+| Client approved revision 3 | `33d9f1a4-9ca7-4432-9076-82d399bce6d3` | **64** | 2 |
+
+The verification script matched each event, completed run, processing receipt and recipient rows to the workflow ID and successful execution in n8n's own database. Approval-event checks included the exact revision UUID. Reminder verification followed the reservation to its originating timer execution. CP2 lead and assignment and CP3 analysis, strategy and planning workflows also ran during the final browser suite.
+
+**Limits and handoff.** Tests used fixture AI (`fixture-v1`), local file storage and the development inbox. Gmail, Telegram, Drive and a live LLM were not exercised. Local Compose runs the schedule every minute. Operators can configure a daily cron expression and timezone. Monitoring displays the latest attempt for up to 100 recent events. No outstanding CP4 verification blockers. The local baseline is `c28175d`. CP4 changes are in the working tree. No remote, push, volume reset or CP5 implementation.
+
 ## CP3 Creative Intelligence
 
 **CP3 VERIFIED on the local stack.** CP3-A passed before CP3-B began. The five Compose services are healthy. CP4 awaits checkpoint review and explicit authorization.
