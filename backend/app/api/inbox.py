@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException
 from sqlalchemy import String, and_, or_, select
 
 from app.api.deps import Database, Identity
+from app.brief_models import Snapshot
 from app.models import Project
 from app.operations_models import Notification, Outbox
 from app.project_models import TaskAssignee
@@ -31,10 +32,16 @@ def inbox(db: Database, identity: Identity) -> dict[str, Any]:
     )
     eligible = and_(Outbox.event_type == "task.assigned", current_assignment)
     if roles & {"admin", "agency_manager"}:
-        eligible = or_(eligible, Outbox.event_type == "lead.created")
+        eligible = or_(
+            eligible,
+            Outbox.event_type.in_(
+                ["lead.created", "brief.approved", "creative_direction.approved"]
+            ),
+        )
     rows = db.execute(
-        select(Notification, Outbox)
-        .join(Outbox)
+        select(Notification, Outbox, Snapshot.brief_id)
+        .join(Outbox, Notification.event_id == Outbox.id)
+        .outerjoin(Snapshot, Snapshot.id.cast(String) == Outbox.payload["snapshot_id"].astext)
         .where(
             Notification.recipient_id == actor,
             Notification.delivery_status == "delivered",
@@ -51,8 +58,9 @@ def inbox(db: Database, identity: Identity) -> dict[str, Any]:
                 "channel": notice.channel,
                 "delivered_at": notice.delivered_at,
                 "resource_type": event.aggregate_type,
+                "brief_id": brief_id,
                 "resource_id": event.aggregate_id,
             }
-            for notice, event in rows
+            for notice, event, brief_id in rows
         ]
     }

@@ -38,14 +38,30 @@ def compose(*args, stdin=None):
     ).stdout.strip()
 
 
+WORKFLOWS = {
+    "lead.created": "creativeLeadWf01",
+    "task.assigned": "creativeTaskWf01",
+    "brief.approved": "creativeBriefWf01",
+    "creative_direction.approved": "creativePlanWf01",
+}
+STAGES = {
+    "brief.approved": ["brief_analysis", "creative_strategy"],
+    "creative_direction.approved": ["content_plan"],
+}
+JOBS = """
+SELECT generation_type, provider, g.id
+FROM ai_generations g JOIN outbox_events e ON e.id=g.event_id
+WHERE e.id=:'event' AND g.status='completed' AND g.snapshot_id=(e.payload->>'snapshot_id')::uuid
+AND g.service_identity='n8n:WF-B' ORDER BY generation_type;
+"""
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("event_type", choices=["lead.created", "task.assigned"])
+    parser.add_argument("event_type", choices=WORKFLOWS)
     parser.add_argument("resource_id", type=UUID)
     args = parser.parse_args()
-    workflow = {"lead.created": "creativeLeadWf01", "task.assigned": "creativeTaskWf01"}[
-        args.event_type
-    ]
+    workflow = WORKFLOWS[args.event_type]
     end = time.monotonic() + 35
     while time.monotonic() < end:
         result = compose(
@@ -69,8 +85,29 @@ def main():
         if result:
             event, execution, count = result.split("|")
             if compose("n8n", "node", "-e", N8N, execution, workflow) == "success":
+                evidence = ""
+                if args.event_type in STAGES:
+                    rows = compose(
+                        "postgres",
+                        "psql",
+                        "-XAt",
+                        "-U",
+                        "postgres",
+                        "-d",
+                        "creativeos",
+                        "-v",
+                        f"event={event}",
+                        "-f",
+                        "-",
+                        stdin=JOBS,
+                    ).splitlines()
+                    if [r.split("|")[0] for r in rows] != STAGES[args.event_type]:
+                        raise SystemExit(
+                            "Workflow generations differ from the expected snapshot and stages"
+                        )
+                    evidence = ", jobs " + ", ".join(rows)
                 print(
-                    f"PASS {args.event_type} event {event}, n8n execution {execution}, {count} development deliveries"
+                    f"PASS {args.event_type} event {event}, n8n execution {execution}, {count} development deliveries{evidence}"
                 )
                 return
         time.sleep(1)

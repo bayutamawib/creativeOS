@@ -27,3 +27,4 @@ dnspython==2.9.2
 email-validator==2.4.0
 pycparser==3.12
 PyJWT==2.15.1
+Pillow==13.0.0

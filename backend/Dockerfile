@@ -6,6 +6,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY alembic.ini pyproject.toml ./
 COPY alembic alembic
 COPY app app
-RUN useradd --create-home --uid 10001 creative
+RUN useradd --create-home --uid 10001 creative && install -d -o creative -g creative -m 700 /home/creative/uploads
 USER creative
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]

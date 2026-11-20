@@ -1,0 +1,260 @@
+{
+  "id": "creativePlanWf01",
+  "name": "WF-B · Selected direction",
+  "active": false,
+  "versionId": "d1fd3b21-2ab9-4dc8-bc09-06ff4a0c1b5f",
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 180
+  },
+  "nodes": [
+    {
+      "name": "Signed event",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "creative-direction-approved",
+        "authentication": "jwtAuth",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "credentials": {
+        "jwtAuth": {
+          "id": "creativeJwtAuth01",
+          "name": "Creative signed dispatcher"
+        }
+      },
+      "webhookId": "a6056136-a798-406c-a8cd-4c74d28d7ad2",
+      "id": "4428b0e0-9220-40ad-8d9b-455e922ef370",
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "Register run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:8000/api/v1/internal/workflow-runs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { raw: JSON.stringify($json.body), timestamp: $json.headers['x-creative-timestamp'], signature: $json.headers['x-creative-signature'], execution_id: String($execution.id), workflow: 'WF-B' } }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "creativeCallback1",
+          "name": "Creative workflow callbacks"
+        }
+      },
+      "id": "4428b0e0-9220-40ad-8d9b-455e922ef371",
+      "position": [
+        260,
+        0
+      ]
+    },
+    {
+      "id": "b3eac181-c886-4f30-bcab-8ba9169a2fcf",
+      "name": "Queue content_plan",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "=http://backend:8000/api/v1/internal/workflow-runs/{{ $json.run_id }}/generations",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"stage\": \"content_plan\"}"
+      },
+      "position": [
+        500,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "creativeCallback1",
+          "name": "Creative workflow callbacks"
+        }
+      }
+    },
+    {
+      "id": "374f51e5-1e7e-43f9-8165-d409db8b0676",
+      "name": "Pending content_plan",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "5b9ff4b5-3730-4546-aa73-43e07d25a21f",
+              "leftValue": "={{ ['running','pending'].includes($json.status) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        720,
+        0
+      ]
+    },
+    {
+      "id": "af8987a4-54f4-4382-8d97-eb9f4fd99b43",
+      "name": "Wait for content_plan",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": 1,
+        "unit": "seconds"
+      },
+      "position": [
+        920,
+        -180
+      ]
+    },
+    {
+      "id": "b2ee717a-e29b-41c0-a0f2-30f224cf93c1",
+      "name": "Poll content_plan",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "=http://backend:8000/api/v1/internal/workflow-runs/{{ $json.run_id }}/generations/{{ $json.generation_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "position": [
+        1100,
+        -180
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "creativeCallback1",
+          "name": "Creative workflow callbacks"
+        }
+      }
+    },
+    {
+      "id": "de592721-8ab8-447b-954a-baefe70eea4e",
+      "name": "Record outcome",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "=http://backend:8000/api/v1/internal/workflow-runs/{{ $json.run_id }}/outcome",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { status:$json.status } }}"
+      },
+      "position": [
+        1650,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "creativeCallback1",
+          "name": "Creative workflow callbacks"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Signed event": {
+      "main": [
+        [
+          {
+            "node": "Register run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Register run": {
+      "main": [
+        [
+          {
+            "node": "Queue content_plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Queue content_plan": {
+      "main": [
+        [
+          {
+            "node": "Pending content_plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pending content_plan": {
+      "main": [
+        [
+          {
+            "node": "Wait for content_plan",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for content_plan": {
+      "main": [
+        [
+          {
+            "node": "Poll content_plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poll content_plan": {
+      "main": [
+        [
+          {
+            "node": "Pending content_plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

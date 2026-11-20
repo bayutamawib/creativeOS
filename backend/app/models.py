@@ -58,6 +58,7 @@ class Client(Entity):
     __tablename__ = "clients"
     company_name: Mapped[str] = mapped_column(String(200))
 
+    brand_guidelines: Mapped[dict[str,Any]] = mapped_column(JSONB,server_default=text("'{}'::jsonb"))
     brand_name: Mapped[str | None] = mapped_column(String(200))
     industry: Mapped[str | None] = mapped_column(String(100))
     primary_contact_name: Mapped[str | None] = mapped_column(String(150))

@@ -56,7 +56,7 @@ Submit a native inquiry at [Start a project](http://localhost:3100/inquiry). In 
 
 Use Projects to manage project dates, milestones, the project team and tasks. Team Members see their assigned projects and tasks. Clients see released milestones and their completion percentage. Archiving removes a project from the operational portals and retains its history.
 
-The Compose n8n bootstrap imports the checked-in WF-A and WF-C definitions and publishes both production webhooks before serving requests. No Python runner is used by either workflow. The worker signs its envelope and sends a short-lived bearer token. n8n uses its encrypted callback credential to call FastAPI. Local deliveries appear under the recipient's **Inbox**. The development inbox requires development mode. External Google Forms, Telegram and email services require separate live setup.
+The Compose n8n bootstrap imports and publishes all four checked-in webhook definitions for WF-A, WF-B and WF-C. Each workflow uses HTTP-based orchestration. The worker signs its envelope and sends a short-lived bearer token. n8n uses its encrypted callback credential to call FastAPI. Local deliveries appear under the recipient's **Inbox**. The development inbox requires development mode. External Google Forms, Telegram and email services require separate live setup.
 
 Run the browser suite against the seeded Compose stack to generate and verify both workflows. The operations tests match the exact resource's outbox event, completed run, delivery receipt and recipient rows to the successful execution in n8n's own metadata. To recheck either event from the repository root run one of the following commands with its lead or task UUID.
 
@@ -66,3 +66,29 @@ python3 scripts/verify_workflow.py task.assigned <task-uuid>
 ```
 
 When upgrading an existing CP1 workspace, run `python3 scripts/init_env.py` before Compose to generate the missing integration keys and retain existing credentials. After editing a workflow definition, restart n8n to import and publish the repository version.
+
+
+## Creative Intelligence
+
+Open **Briefs** in the client portal to upload references, save a draft and submit it as a client admin. The agency reviewer can request clarification or approve the displayed version. Approval history retains the submitted fields and reference hashes. Shared attachments appear in **Files**. Downloads always go through FastAPI.
+
+Open **Creative Studio** from an approved agency brief. The approved snapshot starts analysis and strategy. Select a direction to start planning. Select a plan item to create its two project tasks. **Create draft deliverable** saves the internal draft. **Suggest copy** generates a proposal and **Save copy as revision** creates the next immutable revision.
+
+### Local and external adapters
+
+Compose defaults to deterministic AI fixtures, a private local file volume and development inbox notifications. Local uploads support UTF-8 TXT and validated, re-encoded PNG/JPEG images up to 5 MiB. Downloads check the stored hash. Back up the `creative_files` volume with the PostgreSQL data. Reference documents contribute metadata and hashes to AI input. Brand guidance supplied through the agency brand-guidelines endpoint is captured as text.
+
+The optional Drive adapter uses `FILE_PROVIDER=google_drive` and a dedicated account's `DRIVE_ACCESS_TOKEN`. The backend creates private files under opaque names and stores their provider IDs internally. The operator supplies and refreshes the OAuth access token. Existing local files continue to use local storage. Live Drive access has not been verified. [Google Drive upload documentation](https://developers.google.com/workspace/drive/api/guides/manage-uploads)
+
+The optional LLM adapter accepts a Chat Completions-compatible HTTPS endpoint in `AI_ENDPOINT`, an operator-selected `AI_MODEL`, and `AI_API_KEY` when `AI_PROVIDER=compatible`. The API and worker must use the same configuration. Keep credentials in the ignored environment file or deployment secret store. `AI_TIMEOUT_SECONDS` and `AI_MAX_OUTPUT_TOKENS` bound individual requests. Brief approval can start generation automatically, so use fixture mode for local tests. Live LLM calls require separate authorization.
+
+### Workflow verification
+
+The creative browser test matches the exact brief and selected direction to PostgreSQL events, receipt, notifications and completed snapshot-bound jobs. It checks the workflow ID and successful execution independently inside n8n. To verify existing results locally, run either command with its resource UUID.
+
+```sh
+python3 scripts/verify_workflow.py brief.approved <brief-uuid>
+python3 scripts/verify_workflow.py creative_direction.approved <direction-proposal-uuid>
+```
+
+From `frontend/`, running `CP3_TEST_WORKER_RESTART=1 PLAYWRIGHT_CHANNEL=chrome npm run test:e2e -- studio.spec.ts` also stops the local worker, queues one job, restarts the worker and waits for the same job to complete.

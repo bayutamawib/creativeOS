@@ -54,7 +54,11 @@ class Task(Entity):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+    source_proposal_id:Mapped[UUID|None]=mapped_column(ForeignKey("creative_proposals.id",name="fk_task_proposal"))
+    template_step:Mapped[str|None]
     __table_args__ = (
+        UniqueConstraint("source_proposal_id","template_step",name="uq_proposal_task_step"),
+        CheckConstraint("(source_proposal_id IS NULL) = (template_step IS NULL)",name="ck_task_template"),
         UniqueConstraint("id", "project_id"),
         ForeignKeyConstraint(["project_id", "client_id"], ["projects.id", "projects.client_id"]),
         ForeignKeyConstraint(

@@ -8,10 +8,12 @@ export default async function Layout({ children }: { children: ReactNode }) {
     <Workspace me={me} title="Client workspace">
       <nav
         aria-label="Client navigation"
-        className="mb-6 flex gap-4 border-b border-border pb-4"
+        className="mb-6 flex flex-wrap gap-4 border-b border-border pb-4"
       >
         <Link href="/client/dashboard">Overview</Link>
         <Link href="/client/projects">Projects</Link>
+        <Link href="/client/briefs">Briefs</Link>
+        <Link href="/client/files">Files</Link>
       </nav>
       {children}
     </Workspace>

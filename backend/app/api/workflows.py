@@ -1,5 +1,5 @@
 import secrets
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, HTTPException
@@ -8,7 +8,7 @@ from pydantic import Field
 from app.api.deps import Database
 from app.config import settings
 from app.schemas import Input
-from app.services import workflows
+from app.services import creative_workflow, workflows
 
 
 def authenticate(x_creative_service: Annotated[str | None, Header()] = None) -> None:
@@ -30,7 +30,7 @@ class Trigger(Input):
 
 
 class Outcome(Input):
-    status: Literal["completed"]
+    status: Literal["completed", "failed", "cancelled"]
 
 
 @router.post("")
@@ -50,4 +50,23 @@ def notify(run_id: UUID, db: Database) -> dict[str, UUID]:
 
 @router.post("/{run_id}/outcome")
 def outcome(run_id: UUID, data: Outcome, db: Database) -> dict[str, str]:
+    run, _ = workflows.run_context(db, run_id)
+    if run.workflow_name == "WF-B":
+        return creative_workflow.outcome(db, run_id)
+    if data.status != "completed":
+        raise HTTPException(409, "Notification step incomplete")
     return workflows.finish(db, run_id)
+
+
+class Stage(Input):
+    stage: Literal["brief_analysis", "creative_strategy", "content_plan"]
+
+
+@router.post("/{run_id}/generations")
+def enqueue_stage(run_id: UUID, data: Stage, db: Database) -> dict[str, Any]:
+    return creative_workflow.queue(db, run_id, data.stage)
+
+
+@router.get("/{run_id}/generations/{generation_id}")
+def poll_stage(run_id: UUID, generation_id: UUID, db: Database) -> dict[str, Any]:
+    return creative_workflow.poll(db, run_id, generation_id)

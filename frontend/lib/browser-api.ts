@@ -1,15 +1,24 @@
-export async function mutate(path: string, method: string, payload?: unknown) {
+export function csrfHeaders(): Record<string, string> {
   const token = document.cookie
     .split("; ")
     .find((s) => s.startsWith("__Host-creative_csrf="))
     ?.split("=")[1];
+  return token ? { "X-CSRF-Token": token } : {};
+}
+export async function mutate(
+  path: string,
+  method: string,
+  payload?: unknown,
+  additionalHeaders?: Record<string, string>,
+) {
   const res = await fetch("/api/v1" + path, {
     method,
     cache: "no-store",
     credentials: "same-origin",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { "X-CSRF-Token": token } : {}),
+      ...csrfHeaders(),
+      ...additionalHeaders,
     },
     body: payload === undefined ? undefined : JSON.stringify(payload),
   });

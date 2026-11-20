@@ -2,16 +2,16 @@ import Link from "next/link";
 import { getApi, requirePortal } from "@/lib/server-api";
 export default async function Page() {
   await requirePortal("admin");
-  const rows =
-    await getApi<
-      {
-        id: string;
-        message: string;
-        delivered_at: string;
-        resource_type: string;
-        resource_id: string;
-      }[]
-    >("/notifications");
+  const rows = await getApi<
+    {
+      id: string;
+      message: string;
+      delivered_at: string;
+      resource_type: string;
+      brief_id: string | null;
+      resource_id: string;
+    }[]
+  >("/notifications");
   return (
     <>
       <h2>Development inbox</h2>
@@ -22,7 +22,9 @@ export default async function Page() {
               href={
                 n.resource_type === "lead"
                   ? "/admin/leads/" + n.resource_id
-                  : "/admin/tasks"
+                  : n.resource_type === "task"
+                    ? "/admin/tasks"
+                    : "/admin/creative-studio?brief=" + n.brief_id
               }
             >
               {n.message}

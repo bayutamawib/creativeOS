@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.api import agency, auth, clients, inbox, intake, projects, workflows
+from app.api import agency, auth, briefs, clients, inbox, intake, projects, studio, workflows
 from app.db import database_ready
 from app.logging_config import configure_logging
 
@@ -21,9 +21,11 @@ for router in (
     auth.router,
     agency.router,
     clients.router,
+    briefs.router,
     inbox.router,
     intake.router,
     projects.router,
+    studio.router,
     workflows.router,
 ):
     app.include_router(router, prefix="/api/v1")

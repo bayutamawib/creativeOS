@@ -1,11 +1,21 @@
 from functools import lru_cache
+from typing import Literal
 
-from pydantic import SecretStr
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings
 from sqlalchemy import URL
 
 
 class Settings(BaseSettings):
+    ai_provider: Literal["fixture", "compatible"] = "fixture"
+    ai_model: str = "fixture-v1"
+    ai_endpoint: str = ""
+    ai_api_key: SecretStr | None = None
+    ai_max_output_tokens: int = Field(2000, ge=128, le=8000)
+    ai_timeout_seconds: int = Field(15, ge=1, le=30)
+    file_provider: Literal["local", "google_drive"] = "local"
+    drive_access_token: SecretStr | None = None
+    storage_dir: str = "/home/creative/uploads"
     dev_mail_dir: str = "/home/creative/.local/mail"
     app_env: str = "production"
     web_origin: str = "http://localhost:3100"

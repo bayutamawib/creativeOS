@@ -1,0 +1,459 @@
+{
+  "id": "creativeBriefWf01",
+  "name": "WF-B · Approved brief",
+  "active": false,
+  "versionId": "19dbe52e-b204-4a43-bf70-c291d5560adb",
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 180
+  },
+  "nodes": [
+    {
+      "name": "Signed event",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "creative-brief-approved",
+        "authentication": "jwtAuth",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "credentials": {
+        "jwtAuth": {
+          "id": "creativeJwtAuth01",
+          "name": "Creative signed dispatcher"
+        }
+      },
+      "webhookId": "981d13af-7514-4d85-9698-26e427f4dd9a",
+      "id": "4428b0e0-9220-40ad-8d9b-455e922ef370",
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "Register run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:8000/api/v1/internal/workflow-runs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { raw: JSON.stringify($json.body), timestamp: $json.headers['x-creative-timestamp'], signature: $json.headers['x-creative-signature'], execution_id: String($execution.id), workflow: 'WF-B' } }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "creativeCallback1",
+          "name": "Creative workflow callbacks"
+        }
+      },
+      "id": "4428b0e0-9220-40ad-8d9b-455e922ef371",
+      "position": [
+        260,
+        0
+      ]
+    },
+    {
+      "id": "07e23b60-b635-4f9b-bd15-985c32ef757a",
+      "name": "Queue brief_analysis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "=http://backend:8000/api/v1/internal/workflow-runs/{{ $json.run_id }}/generations",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"stage\": \"brief_analysis\"}"
+      },
+      "position": [
+        500,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "creativeCallback1",
+          "name": "Creative workflow callbacks"
+        }
+      }
+    },
+    {
+      "id": "53bcb410-04dd-459b-afc2-7e52b393b8ac",
+      "name": "Pending brief_analysis",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b8004914-2e4a-4515-aefd-482b3d0cb53d",
+              "leftValue": "={{ ['running','pending'].includes($json.status) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        720,
+        0
+      ]
+    },
+    {
+      "id": "e0518625-6d45-4197-9616-aadb21429b23",
+      "name": "Wait for brief_analysis",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": 1,
+        "unit": "seconds"
+      },
+      "position": [
+        920,
+        -180
+      ]
+    },
+    {
+      "id": "41bfbb57-75ad-41bc-852e-5d37b5b77233",
+      "name": "Poll brief_analysis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "=http://backend:8000/api/v1/internal/workflow-runs/{{ $json.run_id }}/generations/{{ $json.generation_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "position": [
+        1100,
+        -180
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "creativeCallback1",
+          "name": "Creative workflow callbacks"
+        }
+      }
+    },
+    {
+      "id": "79a62f1c-e747-40af-a47f-6c434f199a73",
+      "name": "Analysis succeeded",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "89ef4cf4-e5cf-4140-85c7-c1f2855b5abd",
+              "leftValue": "={{ $json.status === 'completed' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        960,
+        100
+      ]
+    },
+    {
+      "id": "cb661cc4-b61e-426a-8c8a-44acd7987feb",
+      "name": "Queue creative_strategy",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "=http://backend:8000/api/v1/internal/workflow-runs/{{ $json.run_id }}/generations",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"stage\": \"creative_strategy\"}"
+      },
+      "position": [
+        1550,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "creativeCallback1",
+          "name": "Creative workflow callbacks"
+        }
+      }
+    },
+    {
+      "id": "175b3f45-aaf5-4edd-876f-91c186f9cbfc",
+      "name": "Pending creative_strategy",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f5aa8e2a-07ed-41af-b6a8-81899e4e62b4",
+              "leftValue": "={{ ['running','pending'].includes($json.status) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        1770,
+        0
+      ]
+    },
+    {
+      "id": "db06e911-1345-472b-9135-fcb365ac48a1",
+      "name": "Wait for creative_strategy",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": 1,
+        "unit": "seconds"
+      },
+      "position": [
+        1970,
+        -180
+      ]
+    },
+    {
+      "id": "931fd306-fae3-4ace-a721-48008380e15f",
+      "name": "Poll creative_strategy",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "=http://backend:8000/api/v1/internal/workflow-runs/{{ $json.run_id }}/generations/{{ $json.generation_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "position": [
+        2150,
+        -180
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "creativeCallback1",
+          "name": "Creative workflow callbacks"
+        }
+      }
+    },
+    {
+      "id": "0f0c1994-6d2d-435c-a6fd-a77a9fc989e2",
+      "name": "Record outcome",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "=http://backend:8000/api/v1/internal/workflow-runs/{{ $json.run_id }}/outcome",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { status:$json.status } }}"
+      },
+      "position": [
+        2700,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "creativeCallback1",
+          "name": "Creative workflow callbacks"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Signed event": {
+      "main": [
+        [
+          {
+            "node": "Register run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Register run": {
+      "main": [
+        [
+          {
+            "node": "Queue brief_analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Queue brief_analysis": {
+      "main": [
+        [
+          {
+            "node": "Pending brief_analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pending brief_analysis": {
+      "main": [
+        [
+          {
+            "node": "Wait for brief_analysis",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Analysis succeeded",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for brief_analysis": {
+      "main": [
+        [
+          {
+            "node": "Poll brief_analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poll brief_analysis": {
+      "main": [
+        [
+          {
+            "node": "Pending brief_analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analysis succeeded": {
+      "main": [
+        [
+          {
+            "node": "Queue creative_strategy",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Queue creative_strategy": {
+      "main": [
+        [
+          {
+            "node": "Pending creative_strategy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pending creative_strategy": {
+      "main": [
+        [
+          {
+            "node": "Wait for creative_strategy",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for creative_strategy": {
+      "main": [
+        [
+          {
+            "node": "Poll creative_strategy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poll creative_strategy": {
+      "main": [
+        [
+          {
+            "node": "Pending creative_strategy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

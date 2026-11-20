@@ -12,6 +12,8 @@ export default async function Layout({ children }: { children: ReactNode }) {
       >
         <Link href="/admin/dashboard">Overview</Link>
         <Link href="/admin/projects">Projects</Link>
+        <Link href="/admin/briefs">Briefs</Link>
+        <Link href="/admin/creative-studio">Creative Studio</Link>
         <Link href="/admin/tasks">Tasks</Link>
         <Link href="/admin/notifications">Inbox</Link>
         {me.agency_roles.some(

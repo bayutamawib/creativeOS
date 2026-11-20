@@ -17,6 +17,19 @@ from app.security import hash_password
 from app.services.sessions import CSRF_COOKIE
 
 
+@pytest.fixture(autouse=True)
+def local_adapters(monkeypatch, tmp_path):
+    monkeypatch.setenv("FILE_PROVIDER", "local")
+    monkeypatch.setenv("STORAGE_DIR", str(tmp_path / "uploads"))
+    monkeypatch.setenv("AI_PROVIDER", "fixture")
+    monkeypatch.setenv("AI_MODEL", "fixture-v1")
+    monkeypatch.delenv("AI_API_KEY", raising=False)
+    monkeypatch.delenv("DRIVE_ACCESS_TOKEN", raising=False)
+    settings.cache_clear()
+    yield
+    settings.cache_clear()
+
+
 @pytest.fixture(scope="session")
 def test_password():
     raw = secrets.token_urlsafe(24)

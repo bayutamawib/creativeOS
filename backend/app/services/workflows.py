@@ -25,6 +25,8 @@ from app.security import now
 from app.services import agency
 
 ROUTES = {
+    "brief.approved": ("WF-B", "creative-brief-approved"),
+    "creative_direction.approved": ("WF-B", "creative-direction-approved"),
     "lead.created": ("WF-A", "creative-lead-created"),
     "task.assigned": ("WF-C", "creative-task-assigned"),
 }
@@ -112,6 +114,21 @@ def eligible(db: Session, event: Outbox) -> tuple[set[UUID], str]:
             )
         )
         return set(ids), "A new inquiry is ready for agency review."
+    if event.event_type in {"brief.approved", "creative_direction.approved"}:
+        from app.services.creative_workflow import final_state
+
+        if final_state(db, event) != "completed":
+            raise HTTPException(409, "Creative workflow is incomplete")
+        ids = db.scalars(
+            select(AgencyMembership.user_id)
+            .join(User)
+            .where(
+                User.is_active,
+                AgencyMembership.is_active,
+                AgencyMembership.role.in_(["admin", "agency_manager"]),
+            )
+        )
+        return set(ids), "Creative proposals are ready for agency review."
     if event.event_type == "task.assigned":
         assignment = db.get(TaskAssignee, UUID(event.payload["assignment_id"]))
         recipients: set[UUID] = set()
@@ -182,10 +199,11 @@ def claim(db: Session) -> tuple[UUID, UUID, str, str] | None:
     row = db.scalar(
         select(Outbox)
         .where(
+            Outbox.event_type.in_(ROUTES),
             or_(
                 and_(Outbox.status == "pending", Outbox.next_attempt_at <= current),
                 and_(Outbox.status == "processing", Outbox.claim_expires_at <= current),
-            )
+            ),
         )
         .order_by(Outbox.next_attempt_at, Outbox.id)
         .limit(1)
@@ -225,11 +243,15 @@ def settle(db: Session, event_id: UUID, token: UUID, ack: dict[str, Any] | None)
     )
     if (
         run
-        and run.status == "completed"
+        and (
+            run.status == "completed"
+            or run.workflow_name == "WF-B"
+            and run.status in {"failed", "cancelled"}
+        )
         and ack
         and ack.get("event_id") == str(event_id)
         and ack.get("run_id") == str(run.id)
-        and ack.get("status") == "completed"
+        and ack.get("status") == run.status
     ):
         event.status = "delivered"
         event.delivered_at = now()
@@ -273,7 +295,12 @@ def dispatch() -> bool:
     )
     ack = None
     try:
-        with urlopen(request, timeout=12) as response:
+        with urlopen(
+            request,
+            timeout=45
+            if path in {"creative-brief-approved", "creative-direction-approved"}
+            else 12,
+        ) as response:
             result = json.load(response)
             if isinstance(result, dict):
                 ack = result

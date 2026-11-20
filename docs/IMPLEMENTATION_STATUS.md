@@ -1,5 +1,52 @@
 # CREATIVE OS — Implementation status
 
+## CP3 Creative Intelligence
+
+**CP3 VERIFIED on the local stack.** CP3-A passed before CP3-B began. The five Compose services are healthy. CP4 awaits checkpoint review and explicit authorization.
+
+### Preflight and CP3-A · VERIFIED
+
+Initialized the local repository and committed CP2 as `b35d773`. Audited all 148 staged paths, compared staged bytes with generated credentials, scanned common secret formats and inspected both reference images. Environment files, local credentials, assistant settings, dependency caches, uploads and database artifacts are excluded. No remote was configured. Existing volumes were retained.
+
+Migration `0006_briefs` adds files, attachment links, versioned briefs, immutable snapshots and brand guidelines. New FastAPI services and Next.js brief workspaces provide project-scoped uploads, downloads, drafting, clarification, submission and agency review. Approval commits the exact brief, brand context, attachment hashes, audit and pending outbox event together. During CP3-A the dispatcher claims its registered event types only.
+
+On a separate PostgreSQL 16 cluster, `alembic upgrade head`, `alembic check`, Ruff, strict mypy and `pytest -q` passed (31 tests). The strengthened snapshot mutation test and brief suite also passed separately. The browser exercised upload, attachment selection, client submission and agency approval. All seven Chrome journeys passed against Compose. Frontend ESLint, TypeScript and both Vitest tests passed. A first Compose migration invocation inherited the test database password and failed authentication before writing. Running Compose with its own environment applied the migration and all five services became healthy.
+
+### CP3-B · VERIFIED
+
+Approved brief snapshots drive the Brief Analyzer and Creative Strategist. An agency decision starts the Content Planner. Selecting a plan item creates its template tasks once. The selected item can become an internal draft. The Copywriting Assistant proposes changes to the exact current revision, and a human saves the next revision. The Report Summarizer has a typed metrics interface and adapters for CP5. FastAPI owns decisions, durable job states, revision creation, audits and notification receipts. The existing worker executes Python. Both new n8n workflows use authenticated HTTP.
+
+| Command or gate | Observed result |
+|---|---|
+| `docker compose config --quiet`, `docker compose up -d --build --wait` | Production frontend and backend images built. The seeded CP2 database was upgraded in place through `0006_briefs`, `0007_studio` and `0008_file_provider_ref`. Existing PostgreSQL and n8n volumes were preserved. |
+| `sh scripts/test_backend.sh` | Ruff passed, strict mypy passed for 48 modules, all migrations applied to a fresh PostgreSQL database, and Alembic detected no drift. **42 tests passed** in 29.07 seconds with one upstream Starlette TestClient deprecation warning. The host PostgreSQL 16 run also passed all 42 tests. |
+| `cd frontend && npm run lint && npm run typecheck && npm test` | ESLint and TypeScript passed. Both Vitest tests passed. |
+| `CP3_TEST_WORKER_RESTART=1 PLAYWRIGHT_CHANNEL=chrome npm run test:e2e` in `frontend/` | All eight Chrome journeys passed in 46.2 seconds. They exercised client files and history, agency approval, generated directions, human selection, project tasks, copy suggestions and saving revision 2. With the worker stopped, the browser queued job `3006621d-8ec2-435c-b3b5-2f4238db3f42`. After the worker restarted, that job completed. |
+| `python3 scripts/verify_workflow.py` from the browser journeys | Each check joined the exact resource, delivered event, completed run, processing receipt and recipient rows, then compared the workflow ID and success status against n8n's independent execution database. The creative checks also matched approved snapshot IDs, job types and service identity. |
+| `python3 scripts/smoke.py`, `python3 scripts/check_specs.py`, `git diff --check` | Local HTTP smoke tests passed. The specification check passed nine references, 21 JSON examples, workflow and database coverage, and 108 RBAC expectations. Diff whitespace checks passed. |
+
+| Event | PostgreSQL event UUID | Successful n8n execution | Development inbox deliveries |
+|---|---|---:|---:|
+| Brief approved, analysis and strategy completed | `61cbce9b-8821-4544-baa7-cd29695c09a6` | **22** | 2 |
+| Direction approved, plan completed | `a6f0fa7f-8e2f-4397-9bc0-5e03572a0a90` | **23** | 2 |
+| Lead created, CP2 regression | `4984ecf9-c335-47b2-8f05-ed93d29c7150` | **20** | 2 |
+| Task assigned, CP2 regression | `db6335a5-6d8b-4810-9b98-182bc578008a` | **21** | 1 |
+
+**Security and recovery.** PostgreSQL/API tests cover foreign-tenant and unassigned-project denials, internal file and draft visibility, unsafe names and content, oversized files, image sanitization, legacy file reads and hash mismatches. They also cover concurrent approval, snapshot mutation rejection, duplicate job admission, stale input cancellation, revoked assignments, workflow stage and attempt scoping, human selection, deduplicated task/draft writes, missing credentials, malformed output, retry exhaustion and late worker completion after lease takeover. CP1 session, CSRF and delegated-role tests and CP2 operations tests also passed. Provider transport error cases used controlled responses.
+
+Execution 22 produced fixture jobs `51211c2f-8155-4280-96e8-39b1cdfbf380` and `4a3d6466-c02a-40f1-b31b-99e42df0d037`. Execution 23 produced `4897b4f9-17ac-43c7-a2f9-5b90d0d541f9`. An earlier browser run passed the six CP1/CP2 journeys and stopped the two creative tests during setup because Compose ran from the frontend directory. The test helper now invokes Compose from the repository root. A strict mypy finding in the optional Drive response reader was also corrected.
+
+### CP3 file inventory
+
+| Area | Created or modified |
+|---|---|
+| Persistence and APIs | `backend/alembic/env.py`, revisions `0006_briefs_briefs.py`, `0007_studio_studio.py`, `0008_file_provider_ref.py`, `backend/app/{ai_models,brief_models,brief_inputs,models,project_models,config,main}.py`, `api/{briefs,studio,inbox,workflows}.py` |
+| Services and runtime | `backend/app/ai/{__init__,contracts,providers,reporting,runner}.py`, `services/{assets,drive,briefs,creative_workflow,studio,workflows}.py`, `worker.py`, `backend/Dockerfile`, `backend/requirements.txt`, `compose.yaml`, `.env.example`, n8n `workflows/{brief-approved,direction-approved}.json` |
+| Portals | Admin and client layouts and brief pages, admin Creative Studio and notifications, client Files and new brief routes, `frontend/components/{brief-page,brief-workspace,creative-studio}.tsx`, `frontend/lib/{briefs,browser-api,studio}.ts` |
+| Verification and documentation | `backend/tests/{conftest,test_briefs,test_studio}.py`, `frontend/e2e/{accounts.ts,briefs.spec.ts,studio.spec.ts}`, `scripts/verify_workflow.py`, `README.md`, `docs/DECISIONS.md` and this report. The preflight ignore rules are in the CP2 baseline. |
+
+**Integration limits.** All successful creative generations used the deterministic `fixture-v1` model. The compatible HTTPS adapter and Drive request/response handling have local tests. Live LLM, Drive, Gmail and Telegram delivery are unverified. The running stack used local file storage and the development inbox. Drive requires an operator-renewed OAuth access token. A storage process crash before the metadata commit can leave unreferenced private bytes. Uploaded references contribute metadata and checksums to AI context. Automatic file text extraction is outside this implementation. Client deliverable approvals belong to CP4 and reporting integration to CP5.
+
 ## CP2 Operations · 20 November 2026
 
 **CP2 VERIFIED.** CP2-A passed before CP2-B began. Both operations workflows ran in local n8n and produced verified development inbox deliveries. The stack is ready for checkpoint review. CP3 awaits explicit authorization.
