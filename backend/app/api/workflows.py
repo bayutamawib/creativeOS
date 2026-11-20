@@ -9,7 +9,7 @@ from app.api.deps import Database
 from app.config import settings
 from app.schemas import Input
 from app.security import now
-from app.services import creative_workflow, reminders, workflows
+from app.services import creative_workflow, reminders, report_schedule, workflows
 
 
 def authenticate(x_creative_service: Annotated[str | None, Header()] = None) -> None:
@@ -80,3 +80,18 @@ class Tick(Input):
 @router.post("/deadline-scan")
 def deadline_scan(data: Tick, db: Database) -> dict[str, str]:
     return reminders.scan(db, data.execution_id, now())
+
+
+@router.post("/report-schedule")
+def reporting_tick(data: Tick, db: Database) -> dict[str, UUID]:
+    return {"run_id": report_schedule.register(db, data.execution_id, now())}
+
+
+@router.post("/{run_id}/reports")
+def schedule_reports(run_id: UUID, db: Database) -> dict[str, str]:
+    return report_schedule.status(db, run_id, enqueue=True)
+
+
+@router.get("/{run_id}/reports")
+def poll_reports(run_id: UUID, db: Database) -> dict[str, str]:
+    return report_schedule.status(db, run_id, enqueue=False)

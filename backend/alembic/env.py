@@ -1,5 +1,13 @@
 from alembic import context
-from app import ai_models, brief_models, operations_models, project_models, review_models  # noqa: F401
+from app import (  # noqa: F401
+    ai_models,
+    brief_models,
+    operations_models,
+    project_models,
+    quality_models,
+    report_models,
+    review_models,
+)
 from app.db import engine
 from app.models import Base
 

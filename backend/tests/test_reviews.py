@@ -18,6 +18,10 @@ from app.services import reviews
 
 @pytest.fixture
 def draft(browser, workspace):
+    return build_draft(browser, workspace)
+
+
+def build_draft(browser, workspace):
     manager, owner = browser("manager"), browser("owner")
     pid = workspace["north-1"]
     path, _ = approved(owner, manager, pid)

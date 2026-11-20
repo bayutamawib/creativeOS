@@ -742,6 +742,8 @@ Rules:
 - Report publication must be an explicit action.
 - Generate returns 202 with report ID and generating status on creation. Poll report detail. A validated summary produces draft, a terminal generation error produces failed. Preserve metrics on failure. Retry with the same period against the failed record. Publish requires ready_for_review, a human reviewer and timestamp. Emit report.published once. Client lists, details and downloads require published and matching client/project. The internal service can generate drafts only.
 
+Manual generation accepts `period_start`, `period_end` and `report_type` (`project` by default, or `weekly`). Draft edits, review submission and publication require the current integer `version`. A stale transition returns 409. Downloads render JSON on demand through the same authorization check as report detail. Admins and Agency Managers manage reports. Assigned Team Members may read project reports. The `portal=client` projection requires an owning membership and publication. The three agency aggregate endpoints require Admin or Agency Manager privileges.
+
 ## 5.12 Workflow Monitoring
 
 | Method | Endpoint | Access | Description |
@@ -749,6 +751,10 @@ Rules:
 | GET | `/admin/workflow-runs` | Admin, Manager | List workflow runs |
 | GET | `/admin/workflow-runs/{run_id}` | Admin, Manager | Get workflow details |
 | POST | `/admin/workflow-runs/{run_id}/retry` | Admin, Manager | Retry eligible failed workflow |
+
+Admin and Agency Manager monitoring also includes paginated `GET /admin/outbox`, `GET /admin/generation-jobs` and `GET /admin/delivery-attempts`. Use `state=failed` or `state=uncertain` to filter at the database. `GET /admin/outbox/{id}` correlates the event, workflow attempts, jobs, receipts and deliveries. `POST /admin/outbox/{id}/retry` and `POST /admin/generation-jobs/{id}/retry` revalidate eligibility. Failed report summaries use the report's existing period generation endpoint.
+
+The same roles may `POST /admin/evaluations` to execute the synthetic fixture suite, `GET /admin/evaluations` for history, `GET /admin/evaluations/{id}` for results and `PUT /admin/evaluations/{id}/cases/{case_id}/review` to save their own rubric. Evaluation controls and sample outputs contain fictional data. Operational monitoring omits raw business payloads, prompts and notification bodies.
 
 Do not expose workflow execution details to client users.
 
@@ -795,6 +801,7 @@ The dispatcher sends the persisted event envelope to a configured n8n webhook UR
 | POST | `/internal/workflow-runs/{run_id}/generations` | Enqueue the eligible analysis, direction or plan step for this run |
 | GET | `/internal/workflow-runs/{run_id}/generations/{generation_id}` | Poll only a generation belonging to this run |
 | POST | `/internal/workflow-runs/deadline-scan` | Register the authenticated schedule execution and reserve eligible reminder events for its server-derived agency date in one transaction |
+| POST | `/internal/workflow-runs/report-schedule` | Register the n8n execution for the server-derived preceding agency week |
 | POST | `/internal/workflow-runs/{run_id}/reports` | Create or retrieve period reports for eligible projects |
 | GET | `/internal/workflow-runs/{run_id}/reports` | Poll statuses of this run’s reports |
 | POST | `/internal/workflow-runs/{run_id}/notifications` | Reserve eligible deliveries and return minimum destination and message data |

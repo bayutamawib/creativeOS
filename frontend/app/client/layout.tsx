@@ -13,6 +13,7 @@ export default async function Layout({ children }: { children: ReactNode }) {
         <Link href="/client/dashboard">Overview</Link>
         <Link href="/client/projects">Projects</Link>
         <Link href="/client/briefs">Briefs</Link>
+        <Link href="/client/reports">Reports</Link>
         <Link href="/client/approvals">Approvals</Link>
         <Link href="/client/notifications">Inbox</Link>
         <Link href="/client/files">Files</Link>

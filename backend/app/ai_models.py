@@ -20,7 +20,8 @@ from app.models import Entity
 
 class Generation(ProjectRecord):
     __tablename__ = "ai_generations"
-    snapshot_id: Mapped[UUID]
+    snapshot_id: Mapped[UUID | None]
+    report_id: Mapped[UUID | None]
     generation_type: Mapped[str]
     requester_scope: Mapped[str]
     requested_by: Mapped[UUID | None] = mapped_column(ForeignKey("users.id"))
@@ -37,6 +38,7 @@ class Generation(ProjectRecord):
     status: Mapped[str] = mapped_column(server_default="pending")
     output: Mapped[dict[str, Any] | None] = mapped_column(JSONB(none_as_null=True))
     error_code: Mapped[str | None]
+    retry_allowance: Mapped[int] = mapped_column(server_default="0")
     attempt: Mapped[int] = mapped_column(server_default="0")
     claim_token: Mapped[UUID | None]
     claim_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -56,6 +58,15 @@ class Generation(ProjectRecord):
     )
     __table_args__ = (
         ownership(),
+        ForeignKeyConstraint(
+            ["report_id", "project_id"],
+            ["reports.id", "reports.project_id"],
+            name="fk_generation_report",
+        ),
+        CheckConstraint(
+            "(report_id is null) = (snapshot_id is not null) and (generation_type='report_summary') = (report_id is not null)",
+            name="ck_generation_input",
+        ),
         ForeignKeyConstraint(
             ["snapshot_id", "project_id"], ["brief_snapshots.id", "brief_snapshots.project_id"]
         ),

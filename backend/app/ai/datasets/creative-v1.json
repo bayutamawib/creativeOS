@@ -1,0 +1,113 @@
+{
+  "version": "creative-eval-v1",
+  "briefs": [
+    {
+      "id": "brief-01",
+      "title": "Orchard Table",
+      "industry": "food",
+      "objective": "Invite local cooks to a seasonal tasting.",
+      "tone_of_voice": "Warm",
+      "channel": "Instagram",
+      "target_audience": "Home cooks",
+      "restrictions": "No health claims."
+    },
+    {
+      "id": "brief-02",
+      "title": "Loom Coast",
+      "industry": "fashion",
+      "objective": "Introduce a spring capsule collection.",
+      "tone_of_voice": "Editorial",
+      "channel": "Website",
+      "target_audience": "Independent stylists",
+      "restrictions": "Avoid scarcity claims."
+    },
+    {
+      "id": "brief-03",
+      "title": "Juniper Yard",
+      "industry": "property",
+      "objective": "Announce an open studio day.",
+      "tone_of_voice": "Measured",
+      "channel": "Email",
+      "target_audience": "Neighborhood residents",
+      "restrictions": "Do not imply investment returns."
+    },
+    {
+      "id": "brief-04",
+      "title": "Mosaic School",
+      "industry": "education",
+      "objective": "Invite parents to an open classroom.",
+      "tone_of_voice": "Friendly",
+      "channel": "Website",
+      "target_audience": "Families",
+      "restrictions": "No performance guarantees."
+    },
+    {
+      "id": "brief-05",
+      "title": "Folio Circuit",
+      "industry": "technology",
+      "objective": "Explain a community repair workshop.",
+      "tone_of_voice": "Technical",
+      "channel": "LinkedIn",
+      "target_audience": "Repair volunteers",
+      "restrictions": "Avoid unverified compatibility."
+    },
+    {
+      "id": "brief-06",
+      "title": "Stone & Pulp",
+      "industry": "publishing",
+      "objective": "Preview a small press issue.",
+      "tone_of_voice": "Quiet",
+      "channel": "Instagram",
+      "target_audience": "",
+      "restrictions": ""
+    },
+    {
+      "id": "brief-07",
+      "title": "Tamarind Club",
+      "industry": "food",
+      "objective": "Introduce a supper series.",
+      "tone_of_voice": "Playful",
+      "channel": "Email",
+      "target_audience": "Local diners",
+      "restrictions": "No allergy or nutrition assurances."
+    },
+    {
+      "id": "brief-08",
+      "title": "Vela Dye",
+      "industry": "fashion",
+      "objective": "Show how the fabric palette was selected.",
+      "tone_of_voice": "",
+      "channel": "Website",
+      "target_audience": "Design students",
+      "restrictions": "Use an understated tone despite a bold visual brief."
+    },
+    {
+      "id": "brief-09",
+      "title": "Slope Studio",
+      "industry": "property",
+      "objective": "Invite visitors to explore the model space.",
+      "tone_of_voice": "Formal",
+      "channel": "LinkedIn",
+      "target_audience": "",
+      "restrictions": "Do not claim a delivery date."
+    },
+    {
+      "id": "brief-10",
+      "title": "Aster Class",
+      "industry": "education",
+      "objective": "Explain an evening course for beginners.",
+      "tone_of_voice": "Conversational",
+      "channel": "Instagram",
+      "target_audience": "Adult learners",
+      "restrictions": "Keep it brief while explaining the full syllabus."
+    }
+  ],
+  "controls": [
+    "malformed_json",
+    "missing_required_field",
+    "unsupported_report_claim",
+    "stale_snapshot",
+    "unauthorized_generation",
+    "unapproved_direction"
+  ]
+}

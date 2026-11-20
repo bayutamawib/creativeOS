@@ -60,12 +60,15 @@ class Submission(Entity):
 
 
 class Outbox(Entity):
+    error_code: Mapped[str | None]
+    failed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     __tablename__ = "outbox_events"
     event_type: Mapped[str]
     aggregate_type: Mapped[str]
     aggregate_id: Mapped[UUID]
     payload: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
     status: Mapped[str] = mapped_column(server_default="pending")
+    retry_allowance: Mapped[int] = mapped_column(server_default="0")
     attempts: Mapped[int] = mapped_column(server_default="0")
     next_attempt_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
@@ -80,6 +83,7 @@ class Outbox(Entity):
 
 
 class WorkflowRun(Entity):
+    last_callback_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     __tablename__ = "workflow_runs"
     event_id: Mapped[UUID] = mapped_column(ForeignKey("outbox_events.id"))
     workflow_name: Mapped[str]
@@ -103,6 +107,7 @@ class ProcessedEvent(Entity):
 
 class Notification(Entity):
     __tablename__ = "notifications"
+    claim_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     recipient_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), index=True)
     event_id: Mapped[UUID] = mapped_column(ForeignKey("outbox_events.id"))
     channel: Mapped[str]
@@ -111,3 +116,14 @@ class Notification(Entity):
     delivery_status: Mapped[str]
     delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     __table_args__ = (UniqueConstraint("recipient_id", "channel", "deduplication_key"),)
+
+
+class DeliveryAttempt(Entity):
+    __tablename__ = "notification_attempts"
+    notification_id: Mapped[UUID] = mapped_column(ForeignKey("notifications.id"))
+    run_id: Mapped[UUID | None] = mapped_column(ForeignKey("workflow_runs.id"))
+    attempt: Mapped[int]
+    status: Mapped[str]
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    error_code: Mapped[str | None]
+    __table_args__ = (UniqueConstraint("notification_id", "attempt"),)

@@ -10,6 +10,7 @@ from app.models import ClientMembership, Project
 from app.operations_models import Notification, Outbox, WorkflowRun
 from app.project_inputs import Portal
 from app.project_models import Task, TaskAssignee
+from app.report_models import Report
 from app.review_models import Review
 from app.security import now
 from app.services import agency, projects, reminders
@@ -39,7 +40,7 @@ def inbox(db: Database, identity: Identity, portal: Portal = "agency") -> dict[s
         eligible = or_(
             eligible,
             Outbox.event_type.in_(
-                ["lead.created", "brief.approved", "creative_direction.approved"]
+                ["report.drafted", "lead.created", "brief.approved", "creative_direction.approved"]
             ),
         )
     if portal == "client":
@@ -59,6 +60,21 @@ def inbox(db: Database, identity: Identity, portal: Portal = "agency") -> dict[s
                 Review.revision_id.cast(String) == Outbox.payload["revision_id"].astext,
             )
             .exists(),
+        )
+        eligible = or_(
+            eligible,
+            and_(
+                Outbox.event_type == "report.published",
+                select(Report.id)
+                .where(
+                    Report.id == Outbox.aggregate_id,
+                    Report.status == "published",
+                    Report.project_id.in_(
+                        projects.scope(db, actor, "client").with_only_columns(Project.id)
+                    ),
+                )
+                .exists(),
+            ),
         )
     else:
         visible_decision = (

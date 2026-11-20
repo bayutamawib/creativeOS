@@ -100,3 +100,13 @@ Open **Approvals** in the agency portal to edit a revision, attach private proje
 The local **Inbox** receives release, decision and deadline notifications. Agency managers and admins can inspect event delivery and n8n execution IDs in **Automation**. Set `AGENCY_TIMEZONE` to an IANA zone and `REMINDER_CRON` to the n8n cron schedule. The local Compose default scans every minute so changes are visible during testing. For a daily scan at 09:00 use `REMINDER_CRON="0 9 * * *"`. Recreate the services after changing the environment. Deduplication uses the agency-local day. Keep the minute schedule for the Chrome deadline journey.
 
 Run `sh scripts/test_backend.sh` for isolated PostgreSQL verification. In `frontend/`, `CP4_TEST_WORKER_RESTART=1 PLAYWRIGHT_CHANNEL=chrome npm run test:e2e` also verifies release delivery across a worker stop/start. The browser tests use fixture AI and the local development inbox.
+
+### Project reports
+
+Open **Reports** in the Agency workspace, choose a project and enter an inclusive period. The worker generates a draft from frozen PostgreSQL metrics. Save any narrative changes, submit the version for review, then publish it to the client's workspace. Both portals offer an authorized JSON export. Set `REPORT_CRON` for scheduled summaries (default Monday at 09:00 in `AGENCY_TIMEZONE`). The preceding calendar week is generated for planning, in-progress and in-review projects. The local stack uses fixture summaries and the development inbox.
+
+### Monitoring and fixture evaluation
+
+Open **Automation** as an Admin or Agency Manager to inspect events, n8n executions, worker jobs, receipts and delivery attempts. Select an event identifier to follow its records. Failed and uncertain filters show the records that need attention. **Queue retry** appears for eligible transient failures. Failed report summaries can be retried in the report view.
+
+Open **AI evaluations** and select **Run fixture evaluation**, or run `python3 scripts/evaluate.py manager@example.com` against the local stack. The CLI prompts for the password, uses the normal session and CSRF checks, prints the persisted run ID and aggregate results, and signs out. Pass `--port` if the web port differs from 3100. Expand an individual case to inspect the fictional input, output, checks and human rubric. The dataset is `backend/app/ai/datasets/creative-v1.json`. Changes to the cases require a new dataset version. Execution timing can vary between runs. Live model quality and billing are outside this fixture evaluation.

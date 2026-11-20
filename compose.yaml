@@ -84,6 +84,7 @@ services:
       WORKFLOW_KEY: ${WORKFLOW_KEY:?run scripts/init_env.py}
       N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?run scripts/init_env.py}
       GENERIC_TIMEZONE: ${AGENCY_TIMEZONE:-Asia/Jakarta}
+      REPORT_CRON: ${REPORT_CRON:-0 9 * * 1}
       REMINDER_CRON: ${REMINDER_CRON:-* * * * *}
       TZ: ${AGENCY_TIMEZONE:-Asia/Jakarta}
       N8N_DIAGNOSTICS_ENABLED: "false"

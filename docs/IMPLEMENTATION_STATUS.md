@@ -1,8 +1,57 @@
 # CREATIVE OS — Implementation status
 
+## CP5 Reporting, Monitoring and AI Evaluation
+
+**CP5 VERIFIED on the local Compose stack.** The CP5-A gate passed before monitoring and evaluation implementation began. CP5 is ready for owner review. CP6 awaits explicit authorization.
+
+### CP5-A · VERIFIED
+
+Local baseline `178100f` preserves the 48-file CP4 change set. Reviewed the diff and staged paths, checked staged bytes for generated credentials and secret patterns, and confirmed local environment files, private uploads and database artifacts are excluded. Both development volumes were retained.
+
+Added project reports, frozen metric provenance, version-checked narrative review and publication, JSON downloads, agency analytics, scheduled generation and recipient-specific draft/publication notifications. Migration `0011_reports` links report summaries to the existing durable generation queue. The two portals share the report display with separate server-authorized actions.
+
+| Area | Files changed |
+|---|---|
+| Backend | Alembic metadata and `versions/0011_reports.py`, `app/{report_models,ai_models,main}.py`, `ai/{reporting,runner}.py`, `api/{reports,inbox,workflows}.py`, `services/{reports,report_schedule,workflows}.py` |
+| Automation | `workflows/{report-schedule,report-notifications}.json`, n8n bootstrap, Compose, environment example, workflow verifier |
+| Frontend | Both portal layouts, inboxes, report lists and detail routes, `components/{reports,report-actions}.tsx` |
+| Tests and documentation | `tests/{test_reports,test_reviews}.py`, `e2e/reports.spec.ts`, README, API specification, ADR-028/029 and this file |
+
+`sh scripts/test_backend.sh` passed **57 tests** on migrated PostgreSQL, including the CP1–CP4 suites, Ruff, strict mypy and a clean Alembic drift check. Checks cover the 23-hour New York DST day, period boundaries, two simultaneous reservations, exact client revision outcomes, conflicting publication requests, model-claim rejection, recovery using original metrics, draft/export isolation and cross-project reads. One upstream TestClient deprecation warning. Frontend lint, TypeScript, two Vitest tests, production build and the report Playwright journey passed. The browser generated, reviewed, published and downloaded the same report. `scripts/smoke.py`, `scripts/check_specs.py`, Compose configuration and diff checks passed.
+
+Independent n8n execution metadata and PostgreSQL matched. Draft execution **102**, event `ac61f462-7a5f-4eb6-bc76-14c3e98661c2`, and publication **103**, event `6efb60e3-e3ff-4f45-bb7d-7f908b472b00`, each delivered two development inbox messages. Weekly schedule execution **105** matched PostgreSQL run `432ee5f9-53c7-4aa4-a943-407e7ade5960`, report `233f7601-0bdf-43d4-b07f-63cff0ef52f1` and completed summary job `9bf03ac0-b255-4d3d-8473-469555fa5904`. Used a temporary per-minute schedule for the exercise. The normal configuration schedules Monday at 09:00 agency time.
+
+The verified provider was `fixture / fixture-v1`. Narratives require human publication. Current-state metrics carry their collection timestamp. The report does not reconstruct past backlogs.
+
+### CP5-B · VERIFIED
+
+Added manager-only activity lists with state filters, correlated event details, workflow attempts, safe failure categories, consumer receipts, recipient delivery attempts, generation timing and authorized retries. The worker classifies expired sending claims as uncertain. Attempt counters and prior workflow runs survive manual retries. Local notifications and delivery history commit together. Migrations `0012_monitoring_evaluation`, `0013_dispatch_error` and `0014_schedule_heartbeat` preserve earlier records and backfill confirmed local delivery attempts from existing notifications.
+
+The evaluation runner executes ten versioned synthetic briefs through analysis, strategy, planning, copywriting and report summarization. Each case records the synthetic source, validated output, observed checks and elapsed time. Negative controls exercise malformed JSON, missing fields, an unsupported claim, an obsolete brief snapshot, a client initiating an agency generation and a plan without an approved direction. Database-dependent controls use real FastAPI services inside a rolled-back PostgreSQL savepoint. The dashboard and local CLI use the same authenticated API. Human reviewers can score individual outputs and record grounding, safety and acceptance separately.
+
+| Area | CP5-B files changed |
+|---|---|
+| Database and worker | `backend/alembic/env.py`, `versions/{0012_monitoring_evaluation,0013_dispatch_error,0014_schedule_heartbeat}.py`, `app/{operations_models,ai_models,quality_models,main}.py`, `ai/runner.py`, `services/{monitoring,workflows}.py` |
+| Evaluation | `backend/app/ai/evaluation.py`, `ai/datasets/creative-v1.json`, `app/api/{evaluation,monitoring}.py`, `scripts/evaluate.py` |
+| Portals and evidence | Agency layout, `app/admin/automation` and `app/admin/evaluations` list and detail pages, `components/evaluation-actions.tsx`, `e2e/monitoring.spec.ts`, `backend/tests/test_evaluation_monitoring.py`, README, API specification and ADR-030/031. Also updated the weekly schedule workflow, `services/report_schedule.py` and `tests/test_reports.py` for callback expiry and replay across period boundaries |
+
+A CLI invocation produced run `bcc2b76f-bab9-4e61-9f9f-e74f92097ac9`. A separate dashboard run `51450d20-d9f6-4b33-9d0d-1dc8234f7052` produced the same 50 schema-valid, required-complete and grounded outputs and six expected control rejections. The dataset SHA-256 is `01e584f01ffbbd23757b28a05807869bd43c43b0b214b9b4419502342851db3e`. PostgreSQL case counts matched the aggregates and the hash of the dataset file. Total measured fixture execution time was 25 ms and 6 ms respectively. Both runs used `fixture-v1` and prompt `creative-v1`. Tokens were unavailable. No human reviews or model-quality scores were recorded in the development database. Isolated tests exercise human scoring and reject acceptance after a critical finding.
+
+On the monitored stack, n8n publication execution **128** matched PostgreSQL workflow run `7b6742de-38bf-40c4-9823-1aa53951e0ee`, event `f56fdff6-1f7c-484a-8f2b-4ddd5497a365`, report `dc2b580a-514f-4fec-9b17-5af8ff249d1a`, receipt `db14f14f-13e3-4c22-8fbb-26326c289ed7` and two completed attempts for two distinct recipients.
+
+The final isolated PostgreSQL run, `sh scripts/test_backend.sh`, passed **63 tests in 56.21 seconds**. Ruff and strict mypy (62 application modules) passed. Alembic upgraded a clean database through `0014_schedule_heartbeat` and found no model drift. The existing development database upgraded in place. Tests cover repeatable results, dataset version conflicts, critical human review findings, access denial to both client organizations and agency staff, protected monitoring projections, retry authorization, duplicate retries, terminal transport rejection, replay of the same transiently failed generation and uncertain-send suppression. Interrupting the synthetic schedule heartbeat in PostgreSQL failed the orchestration attempt, preserved the job and let a later schedule recover the original report. The suite emitted one upstream Starlette TestClient deprecation warning.
+
+After the heartbeat change, successful n8n execution **154** matched PostgreSQL run `5256b80e-a6d3-4a23-8a3d-12bfb56d89a3`. It covered three distinct project reports, including `128f0dc3-cdda-4d72-b262-cef2f530889f` with completed summary generation `61699fe7-ea8e-4340-b319-94112729b372`. `python3 scripts/verify_workflow.py report.schedule <report-id>` checked n8n execution metadata separately from PostgreSQL.
+
+Final `CP3_TEST_WORKER_RESTART=1 CP4_TEST_WORKER_RESTART=1 PLAYWRIGHT_CHANNEL=chrome npm run test:e2e` passed **10/10 Chrome journeys in 1.4 minutes**, including CP1–CP4 regression paths, both worker restarts, report publication/download, monitoring receipts and the evaluation dashboard. An earlier run caught an automation table regression because a timestamp shared the event name's cell. Separate columns restored the original accessible event name and the existing assertion passed. The independent monitoring journey also passed alone in 10.8 seconds after it was made to create and follow its own inquiry event. The final full browser run confirmed report draft execution **162** (event `12bf649f-c143-40d9-a80a-f7dab3d8b8ae`) and publication **163** (event `fadf7857-ebe2-4b8b-aa95-3276dc53917f`). Each delivered to two development recipients.
+
+Other commands passed: frontend `npm run lint`, `npm run typecheck`, `npm test` (2 Vitest tests), production image builds, `docker compose config --quiet`, `docker compose up -d --build --wait`, `python3 scripts/smoke.py`, `python3 scripts/check_specs.py` (9 specifications, 21 JSON examples, 132 matrix expectations) and `git diff --check`. For the real timer test, Compose temporarily ran n8n with `REPORT_CRON='* * * * *'`. The restored container reports `0 9 * * 1` in `Asia/Jakarta`. All five services passed readiness. Final checks covered all 54 changed files for local secrets and sensitive paths. A scan of 709 requests in the current backend container log found zero 5xx responses, only the expected structured request fields, and no matching generated credentials.
+
+**Limits and next gate.** The measured results cover fixture execution, schema and selected evidence checks. Semantic quality awaits human review. Uncertain external sends were exercised with interrupted synthetic records in isolated PostgreSQL. Local n8n and development inbox delivery were verified. Live LLM, Gmail, Telegram and Google Drive integration remain unverified. No paid requests or public deployment occurred. CP5 changes remain in the working tree for checkpoint review. The CP4 baseline is the latest local commit.
+
 ## CP4 Content Approval and Operational Automation
 
-**CP4 VERIFIED on the local stack.** CP4-A passed before CP4-B began. All five Compose services are healthy. CP5 awaits explicit authorization.
+**CP4 VERIFIED on the local stack.** CP4-A passed before CP4-B began. All five Compose services passed readiness. The owner subsequently authorized CP5.
 
 **Preflight passed.** Reviewed the CP3 inventory and checked the diff, staged paths and staged bytes for generated credentials, demo passwords, private keys and sensitive paths. Created local baseline `c28175d` from 57 changed files. No remote was configured. Existing PostgreSQL and n8n volumes were preserved.
 

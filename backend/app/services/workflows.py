@@ -5,7 +5,7 @@ import json
 import time
 from datetime import timedelta
 from typing import Any
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 from uuid import UUID, uuid4
 
@@ -19,12 +19,21 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.db import engine
 from app.models import AgencyMembership, Project, User
-from app.operations_models import Lead, Notification, Outbox, ProcessedEvent, WorkflowRun
+from app.operations_models import (
+    DeliveryAttempt,
+    Lead,
+    Notification,
+    Outbox,
+    ProcessedEvent,
+    WorkflowRun,
+)
 from app.project_models import Task, TaskAssignee
 from app.security import now
 from app.services import agency, reminders, review_notifications
 
 ROUTES = {
+    "report.published": ("WF-D", "creative-report-notification"),
+    "report.drafted": ("WF-D", "creative-report-notification"),
     "brief.approved": ("WF-B", "creative-brief-approved"),
     "creative_direction.approved": ("WF-B", "creative-direction-approved"),
     "content.client_review_requested": ("WF-B", "creative-content-review"),
@@ -104,13 +113,20 @@ def run_context(db: Session, run_id: UUID) -> tuple[WorkflowRun, Outbox]:
         raise HTTPException(404, "Run not found")
     event = db.get_one(Outbox, event_id, with_for_update=True)
     run = db.get_one(WorkflowRun, run_id, with_for_update=True)
-    if event.event_type.startswith("content.") or event.event_type == "task.deadline_reminder":
+    if (
+        event.event_type.startswith(("content.", "report."))
+        or event.event_type == "task.deadline_reminder"
+    ):
         if run.attempt != event.attempts or run.status not in {"running", "completed"}:
             raise HTTPException(409, "Workflow attempt is closed")
     return run, event
 
 
 def eligible(db: Session, event: Outbox) -> tuple[set[UUID], str]:
+    if event.event_type in {"report.published", "report.drafted"}:
+        from app.services import reports
+
+        return reports.recipients(db, event)
     if event.event_type == "task.deadline_reminder":
         return reminders.recipients(db, event)
     if event.event_type.startswith("content."):
@@ -157,6 +173,20 @@ def eligible(db: Session, event: Outbox) -> tuple[set[UUID], str]:
     raise HTTPException(409, "Notification trigger unavailable")
 
 
+def unresolved_delivery(db: Session, event_id: UUID) -> bool:
+    return (
+        db.scalar(
+            select(Notification.id)
+            .where(
+                Notification.event_id == event_id,
+                Notification.delivery_status.in_(["sending", "uncertain"]),
+            )
+            .limit(1)
+        )
+        is not None
+    )
+
+
 def deliver(db: Session, run_id: UUID) -> None:
     run, event = run_context(db, run_id)
     if settings().app_env != "development":
@@ -169,10 +199,12 @@ def deliver(db: Session, run_id: UUID) -> None:
     )
     if receipt:
         return
+    if unresolved_delivery(db, event.id):
+        raise HTTPException(409, "Delivery requires reconciliation")
     agency.guard(db)
     recipients, message = eligible(db, event)
     for target in recipients:
-        db.execute(
+        notice_id = db.scalar(
             insert(Notification)
             .values(
                 recipient_id=target,
@@ -184,7 +216,18 @@ def deliver(db: Session, run_id: UUID) -> None:
                 delivered_at=now(),
             )
             .on_conflict_do_nothing(index_elements=["recipient_id", "channel", "deduplication_key"])
+            .returning(Notification.id)
         )
+        if notice_id:
+            db.add(
+                DeliveryAttempt(
+                    notification_id=notice_id,
+                    run_id=run.id,
+                    attempt=1,
+                    status="delivered",
+                    finished_at=now(),
+                )
+            )
     db.add(
         ProcessedEvent(
             event_id=event.id, consumer_name=step, result_status="completed", run_id=run.id
@@ -233,7 +276,15 @@ def claim(db: Session) -> tuple[UUID, UUID, str, str] | None:
             previous.status = "failed"
             previous.error_code = "dispatch_lease_expired"
             previous.completed_at = current
-    if row.attempts >= MAX_ATTEMPTS:
+    if unresolved_delivery(db, row.id):
+        row.status = "failed"
+        row.error_code = "delivery_unconfirmed"
+        row.failed_at = current
+        row.claim_token = row.claim_expires_at = None
+        return None
+    if row.attempts >= MAX_ATTEMPTS + row.retry_allowance:
+        row.error_code = row.error_code or "dispatch_lease_expired"
+        row.failed_at = current
         row.status = "failed"
         row.claim_token = row.claim_expires_at = None
         return None
@@ -244,7 +295,13 @@ def claim(db: Session) -> tuple[UUID, UUID, str, str] | None:
     return row.id, row.claim_token, ROUTES[row.event_type][1], envelope(row)
 
 
-def settle(db: Session, event_id: UUID, token: UUID, ack: dict[str, Any] | None) -> None:
+def settle(
+    db: Session,
+    event_id: UUID,
+    token: UUID,
+    ack: dict[str, Any] | None,
+    failure: str = "dispatch_unconfirmed",
+) -> None:
     event = db.get_one(Outbox, event_id, with_for_update=True)
     if event.claim_token != token:
         return
@@ -265,20 +322,29 @@ def settle(db: Session, event_id: UUID, token: UUID, ack: dict[str, Any] | None)
         and ack.get("run_id") == str(run.id)
         and ack.get("status") == run.status
     ):
+        event.error_code = None
         event.status = "delivered"
         event.delivered_at = now()
     else:
-        event.status = "failed" if event.attempts >= MAX_ATTEMPTS else "pending"
-        event.next_attempt_at = now() + timedelta(seconds=min(300, 2**event.attempts))
+        event.error_code = failure
+        terminal = (
+            failure == "dispatch_rejected" or event.attempts >= MAX_ATTEMPTS + event.retry_allowance
+        )
+        event.status = "failed" if terminal else "pending"
+        event.failed_at = now() if terminal else None
+        event.next_attempt_at = now() + timedelta(seconds=min(300, 2 ** min(9, event.attempts)))
         if run and run.status != "completed":
             run.status = "failed"
-            run.error_code = "dispatch_unconfirmed"
+            run.error_code = failure
             run.completed_at = now()
     event.claim_token = event.claim_expires_at = None
 
 
 def dispatch() -> bool:
+    from app.services.monitoring import reconcile_expired
+
     with Session(engine()) as db, db.begin():
+        reconcile_expired(db)
         job = claim(db)
     if not job:
         return False
@@ -306,6 +372,7 @@ def dispatch() -> bool:
         method="POST",
     )
     ack = None
+    failure = "dispatch_unconfirmed"
     try:
         with urlopen(
             request,
@@ -316,8 +383,11 @@ def dispatch() -> bool:
             result = json.load(response)
             if isinstance(result, dict):
                 ack = result
+    except HTTPError as exc:
+        if exc.code in {400, 401, 403, 409, 422}:
+            failure = "dispatch_rejected"
     except (URLError, OSError, ValueError):
         pass
     with Session(engine()) as db, db.begin():
-        settle(db, event_id, token, ack)
+        settle(db, event_id, token, ack, failure)
     return True

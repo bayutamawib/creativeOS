@@ -9,6 +9,7 @@ rm -f "$credentials"
 definitions=$(mktemp -d)
 cp /creative/workflows/*.json "$definitions/"
 node -e 'const fs=require("node:fs"),p=process.argv[1],w=JSON.parse(fs.readFileSync(p));w.nodes[0].parameters.rule.interval[0].expression=process.env.REMINDER_CRON || "0 9 * * *";fs.writeFileSync(p,JSON.stringify(w))' "$definitions/deadline-schedule.json"
+node -e 'const fs=require("node:fs"),p=process.argv[1],w=JSON.parse(fs.readFileSync(p));w.nodes[0].parameters.rule.interval[0].expression=process.env.REPORT_CRON || "0 9 * * 1";fs.writeFileSync(p,JSON.stringify(w))' "$definitions/report-schedule.json"
 n8n import:workflow --separate --input="$definitions"
 rm -r "$definitions"
 for workflow in /creative/workflows/*.json; do

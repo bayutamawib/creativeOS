@@ -3,7 +3,13 @@ import { getApi, requirePortal } from "@/lib/server-api";
 export default async function Page() {
   await requirePortal("client");
   const rows = await getApi<
-    { id: string; resource_id: string; message: string; delivered_at: string }[]
+    {
+      id: string;
+      resource_id: string;
+      resource_type: string;
+      message: string;
+      delivered_at: string;
+    }[]
   >("/notifications?portal=client");
   return (
     <section>
@@ -11,7 +17,13 @@ export default async function Page() {
       <ul className="divide-y divide-border">
         {rows?.map((n) => (
           <li className="py-4" key={n.id}>
-            <Link href={"/client/approvals?item=" + n.resource_id}>
+            <Link
+              href={
+                (n.resource_type === "report"
+                  ? "/client/reports/"
+                  : "/client/approvals?item=") + n.resource_id
+              }
+            >
               {n.message}
             </Link>
             <p className="text-xs">
@@ -20,7 +32,7 @@ export default async function Page() {
           </li>
         ))}
       </ul>
-      {!rows?.length && <p>No pending review notifications.</p>}
+      {!rows?.length && <p>No notifications yet.</p>}
     </section>
   );
 }

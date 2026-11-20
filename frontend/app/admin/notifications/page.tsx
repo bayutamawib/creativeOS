@@ -20,13 +20,15 @@ export default async function Page() {
           <li key={n.id} className="py-4">
             <Link
               href={
-                n.resource_type === "lead"
-                  ? "/admin/leads/" + n.resource_id
-                  : n.resource_type === "content_item"
-                    ? "/admin/approvals?item=" + n.resource_id
-                    : n.resource_type === "task"
-                      ? "/admin/tasks"
-                      : "/admin/creative-studio?brief=" + n.brief_id
+                n.resource_type === "report"
+                  ? "/admin/reports/" + n.resource_id
+                  : n.resource_type === "lead"
+                    ? "/admin/leads/" + n.resource_id
+                    : n.resource_type === "content_item"
+                      ? "/admin/approvals?item=" + n.resource_id
+                      : n.resource_type === "task"
+                        ? "/admin/tasks"
+                        : "/admin/creative-studio?brief=" + n.brief_id
               }
             >
               {n.message}

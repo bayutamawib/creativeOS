@@ -40,6 +40,8 @@ def compose(*args, stdin=None):
 
 
 WORKFLOWS = {
+    "report.drafted": "creativeReportW01",
+    "report.published": "creativeReportW01",
     "content.client_review_requested": "creativeReviewW01",
     "content.revision_requested": "creativeReviewW01",
     "content.client_approved": "creativeReviewW01",
@@ -61,14 +63,54 @@ AND g.service_identity='n8n:WF-B' ORDER BY generation_type;
 """
 
 
+def verify_schedule(report):
+    row = compose(
+        "postgres",
+        "psql",
+        "-XAt",
+        "-v",
+        "ON_ERROR_STOP=1",
+        "-U",
+        "postgres",
+        "-d",
+        "creativeos",
+        "-v",
+        f"report={report}",
+        "-f",
+        "-",
+        stdin="""SELECT r.n8n_execution_id, r.id, g.id
+        FROM workflow_runs r JOIN ai_generations g ON g.run_id=r.id
+        JOIN scheduled_reports s ON s.run_id=r.id AND s.report_id=g.report_id
+        WHERE s.report_id=:'report' AND r.workflow_name='WF-D' AND r.status='completed'
+        AND g.service_identity='n8n:WF-D' AND g.status='completed'
+        ORDER BY r.created_at DESC LIMIT 1;""",
+    )
+    if row:
+        execution, run, job = row.split("|")
+        if (
+            compose("n8n", "node", "-e", N8N, execution, "creativeWeeklyW01")
+            == "success"
+        ):
+            print(
+                f"PASS weekly report {report}, schedule execution {execution}, run {run}, summary job {job}"
+            )
+            return
+    raise SystemExit("No independently confirmed scheduled summary for this report")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("event_type", choices=WORKFLOWS)
+    parser.add_argument("event_type", choices=[*WORKFLOWS, "report.schedule"])
     parser.add_argument("resource_id", type=UUID)
     parser.add_argument("--revision", type=UUID)
     args = parser.parse_args()
+    if args.event_type == "report.schedule":
+        verify_schedule(args.resource_id)
+        return
     workflow = WORKFLOWS[args.event_type]
-    end = time.monotonic() + (100 if args.event_type == "task.deadline_reminder" else 35)
+    end = time.monotonic() + (
+        100 if args.event_type == "task.deadline_reminder" else 35
+    )
     while time.monotonic() < end:
         result = compose(
             "postgres",
@@ -111,7 +153,8 @@ def main():
                     )
                     if (
                         not timer
-                        or compose("n8n", "node", "-e", N8N, timer, "creativeTimerW01") != "success"
+                        or compose("n8n", "node", "-e", N8N, timer, "creativeTimerW01")
+                        != "success"
                     ):
                         raise SystemExit("Missing successful schedule execution")
                     evidence = f", originating schedule execution {timer}"
