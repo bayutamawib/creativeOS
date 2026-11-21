@@ -27,7 +27,7 @@ Use a separate copy of the delivered source for browser tests and screenshots. C
 | Integration | Status | Evidence and boundary |
 |---|---|---|
 | LLM fixture | Verified locally with a development adapter | The real worker persisted structured generations and draft summaries using `fixture-v1` |
-| LLM HTTPS transport | Implemented but not verified live | Operator-selected Chat Completions-compatible endpoint. Fixture mode is the default |
+| LLM HTTPS transport | Verified live for one synthetic copywriting generation | Groq, openai/gpt-oss-20b, attempt 1, structured output persisted. Fixture remains the demo default. Other live generation stages remain unverified. [CP7 evidence](IMPLEMENTATION_STATUS.md#cp7-controlled-groq-verification) |
 | Local file storage | Verified locally with a development adapter | Project-scoped upload, validation, immutable references and authorized download |
 | Google Drive | Implemented but not verified live | Private file adapter uses operator-supplied OAuth access token. Token renewal is manual |
 | Notification inbox | Verified locally with a development adapter | Real n8n workflows call FastAPI to record per-recipient deliveries |
@@ -45,6 +45,8 @@ Compose disables saved success, error, progress and manual execution data and co
 Before a public deployment, require private orchestration networking, HTTPS and controlled editor access. Enforce authentication and strip authorization headers before anything persists the request. Use a supported trigger or a separately reviewed ingress that authenticates and forwards only the required signed envelope, with direct access to the trigger blocked. Re-test both successful and failed requests for immediate removal while retaining execution correlation. Store and rotate signing and callback credentials separately, minimize backup access and retention, and rehearse restore and incident response.
 
 ## Optional one-request live LLM check
+
+CP7 verified Groq copywriting with 4096 tokens and a 30-second timeout. The adapter supplies `User-Agent: CreativeOS/1.0`, resolving the owner-diagnosed Cloudflare rejection. Use an isolated stack, stop its continuous worker and n8n, drain the queue and execute only the intended job once. Restore fixture mode afterward. A timeout requires reconciliation before another attempt.
 
 The default demo uses fixture mode. For a future authorized test, select any provider accepting HTTPS Chat Completions, bearer authentication, JSON-object responses, temperature and max_tokens. Supply the full HTTPS completion URL in `AI_ENDPOINT`, the provider’s exact model ID in `AI_MODEL` and a restricted key in `AI_API_KEY`. The adapter expects Chat Completions-style `choices[0].message.content` with a JSON object. The provider is operator-selected. Keep the normal worker on `fixture / fixture-v1`. Switching a running worker to live mode can send approved brief snapshots automatically.
 

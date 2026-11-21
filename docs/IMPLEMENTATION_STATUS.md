@@ -1,5 +1,23 @@
 # CREATIVE OS — Implementation status
 
+## CP7 Controlled Groq verification
+
+**Controlled live copywriting generation verified on 21 November 2026.** The resumed CP7 run used Groq through the existing compatible adapter with `User-Agent: CreativeOS/1.0`, `openai/gpt-oss-20b`, 4096 output tokens and a 30-second timeout. The raw report-output debug print introduced during manual troubleshooting was removed. Schema and validator behavior were preserved.
+
+The synthetic draft and approved brief were prepared in fixture mode. On the isolated stack the worker and n8n were stopped and zero pending/running jobs were confirmed. The existing authenticated API submitted the sole eligible copywriting job `fe950383-d38e-47f2-ad9a-8ce86038d9f1`. A one-shot invocation of the existing runner counted **one outbound completion request**. PostgreSQL persisted `completed`, attempt **1**, provider `compatible`, model `openai/gpt-oss-20b`, 1,002 input tokens, 917 output tokens and 1,660 ms latency. Pydantic accepted headline, caption, call_to_action, hashtags, revision_notes and potential_risks. No retry occurred. A targeted Chrome check confirmed the persisted headline and save-as-revision control in Creative Studio. The owning client received 403 for the private draft and saw no deliverable or generated headline. Provider billing was unavailable. The manual diagnostic summary calls described by the owner are separate from this single controlled copywriting attempt.
+
+Targeted provider tests passed **4 tests**, with 5 deselected and one upstream TestClient warning. Tests cover the User-Agent header, JSON mode, token response parsing, missing credentials and bounded failures. Ruff passed. Successful generation establishes transport and schema behavior for this synthetic case. Editorial quality and real-client accuracy require human assessment.
+
+The isolated backend and worker were restored to `fixture / fixture-v1` without a live key. All five services returned healthy after n8n bootstrap. The successful generation remained at attempt 1. The README, operations guide and ADR-035 record the live boundary and verification. No full regression suite was repeated.
+
+### Earlier controlled attempt
+
+A synthetic fixture-created private draft was used on the isolated Compose stack. The queue had zero pending or running jobs before submission. The continuous worker and n8n were stopped. The existing authenticated copywriting API queued job `625b32a2-32e7-4a32-a1bf-cdb87bc76e3b` as the only eligible generation.
+
+The one-shot runner counted **one outbound completion attempt** to the approved Groq HTTPS endpoint with `openai/gpt-oss-20b`, a 512-token cap and a 15-second timeout. PostgreSQL recorded provider `compatible`, attempt **1**, status `failed`, error `provider_http_error` and 158 ms latency. The runner saved no output or token counts. Groq documents JSON object mode for the model and still lists `max_tokens` as deprecated. The adapter's safe error category omits the upstream HTTP status, so the specific rejection cause and any charge are unknown. No second attempt was made. [Groq model card](https://console.groq.com/docs/model/openai/gpt-oss-20b) · [Groq API reference](https://console.groq.com/docs/api-reference)
+
+The targeted Chrome check showed the persisted error in Creative Studio. The owning client received HTTP 403 for the private draft and saw no deliverable in the approvals UI. Output-schema validation and successful suggestion rendering were not reached in this live attempt. The isolated backend and worker returned to `fixture / fixture-v1` with no live key. The Compose smoke check passed and the failed job still showed attempt 1 after restoration. The CP6 fixture verification remains the baseline.
+
 ## CP6 Final Integration and Portfolio Demo
 
 **CP6 complete for the local portfolio MVP.** CP6-A passed the integration gates and CP6-B completed the demo and documentation handoff. The local CP5 baseline is `f6772dc`. The n8n pre-persistence redaction limitation is recorded below.

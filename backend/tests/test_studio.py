@@ -314,6 +314,7 @@ def test_compatible_provider_transport(monkeypatch):
 
     class Transport:
         def open(self, req, *, timeout):
+            assert req.get_header("User-agent") == "CreativeOS/1.0"
             payload = json.loads(req.data)
             assert timeout == settings().ai_timeout_seconds
             assert payload["model"] == "test-model" and payload["response_format"] == {

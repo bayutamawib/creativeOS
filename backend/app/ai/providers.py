@@ -165,6 +165,7 @@ class Compatible:
             headers={
                 "Content-Type": "application/json",
                 "Authorization": "Bearer " + config.ai_api_key.get_secret_value(),
+                "User-Agent": "CreativeOS/1.0",
             },
             method="POST",
         )
