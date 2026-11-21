@@ -1,4 +1,5 @@
 import "server-only";
+import { readApi } from "./read-api";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -21,14 +22,15 @@ export async function getApi<T>(path: string): Promise<T | null> {
   const session = jar.get("__Host-creative_session");
   if (!session) return null;
   const base = process.env.INTERNAL_API_URL ?? "http://backend:8000";
-  const res = await fetch(base + "/api/v1" + path, {
-    headers: { cookie: session.name + "=" + session.value },
-    cache: "no-store",
-    signal: AbortSignal.timeout(8000),
-  });
-  if (res.status === 401 || res.status === 404) return null;
-  if (!res.ok) throw new Error("Workspace request failed");
-  return (await res.json()).data as T;
+  return readApi(
+    base + "/api/v1" + path,
+    session.name + "=" + session.value,
+    async (res) => {
+      if (res.status === 401 || res.status === 404) return null;
+      if (!res.ok) throw new Error("Workspace request failed");
+      return (await res.json()).data as T;
+    },
+  );
 }
 export async function requirePortal(kind: "admin" | "client") {
   const me = await getApi<Identity>("/auth/me");

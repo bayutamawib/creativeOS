@@ -7,7 +7,7 @@ from uuid import UUID, uuid4
 import pytest
 from fastapi import HTTPException
 from PIL import Image
-from sqlalchemy import func, select, update
+from sqlalchemy import event, func, select, update
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
 
@@ -184,3 +184,47 @@ def test_image_sanitization_and_legacy_storage(browser, workspace):
     assert Image.open(BytesIO(received.content)).size == (2, 2)
     (Path(settings().storage_dir) / UUID(f["id"]).hex).write_bytes(b"changed")
     assert owner.get(url).status_code == 503
+
+
+def test_brief_list_query_count_is_independent_of_page_size(browser, workspace):
+    client = browser("owner")
+    url = f"{BASE}/projects/{workspace['north-1']}/briefs"
+    asset = upload(client, workspace["north-1"]).json()["data"]["id"]
+    foreign = browser("foreign")
+    assert foreign.get(url).status_code == 404
+    manager = browser("manager")
+    counts = []
+    queries = []
+    expected = {}
+
+    def record(conn, cursor, statement, parameters, context, executemany):
+        queries.append(statement)
+
+    for n in range(1, 5):
+        data = {"title": f"Brief {n}", "objective": "Test", "attachment_ids": [asset]}
+        response = client.post(url, json=data)
+        assert response.status_code == 201
+        brief_id = response.json()["data"]["id"]
+        snapshot_id = None
+        if n == 1:
+            path = f"{BASE}/briefs/{brief_id}"
+            assert client.post(path + "/submit", json={"expected_version": 1}).status_code == 200
+            approved = manager.post(path + "/approve", json={"expected_version": 2})
+            assert approved.status_code == 200
+            snapshot_id = approved.json()["data"]["snapshot_id"]
+            assert snapshot_id is not None
+        expected[brief_id] = snapshot_id
+        queries.clear()
+
+        event.listen(engine(), "before_cursor_execute", record)
+        try:
+            response = client.get(url)
+        finally:
+            event.remove(engine(), "before_cursor_execute", record)
+        assert response.status_code == 200
+        rows = response.json()["data"]
+        assert len(rows) == n and all(r["attachment_ids"] == [asset] for r in rows)
+        assert {r["id"]: r["snapshot_id"] for r in rows} == expected
+        counts.append(len(queries))
+    print(f"Brief list SQL statements for 1–4 briefs: {counts}")
+    assert len(set(counts)) == 1

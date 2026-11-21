@@ -18,7 +18,9 @@ export default async function Layout({ children }: { children: ReactNode }) {
         <Link href="/client/notifications">Inbox</Link>
         <Link href="/client/files">Files</Link>
       </nav>
-      {children}
+      <div id="workspace-content" tabIndex={-1}>
+        {children}
+      </div>
     </Workspace>
   );
 }

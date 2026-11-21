@@ -14,7 +14,13 @@ export function Workspace({
   children: ReactNode;
 }) {
   return (
-    <main className="mx-auto max-w-6xl px-6 py-10 sm:px-12">
+    <main className="mx-auto max-w-6xl px-3 py-6 sm:px-12 sm:py-10">
+      <a
+        className="sr-only focus:not-sr-only focus:inline-block"
+        href="#workspace-content"
+      >
+        Skip to content
+      </a>
       <div className="flex flex-wrap items-start justify-between gap-5 border-b border-border pb-7">
         <div>
           <p className="mb-2 text-sm text-slate-600">{me.full_name}</p>
@@ -31,7 +37,7 @@ export function Workspace({
           <Link href="/client/dashboard">Client portal</Link>
         </nav>
       )}
-      <section className="mt-7 rounded-xl border border-border bg-white p-6">
+      <section className="mt-7 rounded-xl border border-border bg-white p-4 sm:p-6">
         {children}
       </section>
       <footer className="mt-5 text-xs text-slate-500">

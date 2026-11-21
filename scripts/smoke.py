@@ -2,6 +2,7 @@
 import json
 import os
 from pathlib import Path
+from urllib.error import HTTPError
 from urllib.request import urlopen
 
 root = Path(__file__).resolve().parents[1]
@@ -19,4 +20,10 @@ for path, expected in [("/health/live", "alive"), ("/health/ready", "ready")]:
 for key, path in [("WEB_PORT", "/"), ("N8N_PORT", "/healthz/readiness")]:
     with urlopen(local_url(key, path), timeout=8) as response:
         assert response.status == 200
-print("PASS: API liveness, migrated database readiness, frontend and n8n")
+try:
+    urlopen(local_url("API_PORT", "/api/v1/auth/me"), timeout=8)
+except HTTPError as error:
+    assert error.code == 401 and json.load(error)["error"]["code"] == "AUTHENTICATION_REQUIRED"
+else:
+    raise SystemExit("Anonymous session probe unexpectedly succeeded")
+print("PASS: API liveness, migrated database readiness, protected session, frontend and n8n")

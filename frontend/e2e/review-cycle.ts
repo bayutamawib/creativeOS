@@ -1,11 +1,13 @@
+import { capture } from "./portfolio-capture";
 import { expect, type Page } from "@playwright/test";
 import { execFileSync } from "node:child_process";
-import { compose } from "./accounts";
+import { compose, startWorkerAndWait } from "./accounts";
 export async function reviewCycle(
   manager: Page,
   client: Page,
   id: string,
   title: string,
+  portfolio = false,
 ) {
   const url = "?item=" + id;
   async function verify(event: string) {
@@ -39,10 +41,18 @@ export async function reviewCycle(
   await expect(modal).toContainText(title);
   await expect(modal).toContainText("Revision 2");
   await expect(modal).toContainText("visible to the client");
-  await modal.getByRole("button", { name: "Cancel" }).click();
+  await expect(modal.getByRole("button", { name: "Cancel" })).toBeFocused();
+  await manager.keyboard.press("Tab");
+  await expect(
+    modal.getByRole("button", { name: "Confirm & Release" }),
+  ).toBeFocused();
+  if (portfolio) await capture(manager, "release-confirmation");
+  await manager.keyboard.press("Shift+Tab");
+  await manager.keyboard.press("Enter");
   await expect(modal).not.toBeVisible();
   await release.click();
   await manager.keyboard.press("Escape");
+  await expect(release).toBeFocused();
   await expect(modal).not.toBeVisible();
   await client.goto("/client/approvals" + url);
   await expect(client.getByText("No deliverable available.")).toBeVisible();
@@ -55,12 +65,14 @@ export async function reviewCycle(
       manager.getByText("Revision 2 · client review", { exact: true }),
     ).toBeVisible();
   } finally {
-    if (restart) compose("start", "worker");
+    if (restart) startWorkerAndWait();
   }
   await verify("content.client_review_requested");
   await client.goto("/client/notifications");
   await client.getByRole("link", { name: new RegExp(title) }).click();
-  await expect(client).toHaveURL(new RegExp("/client/approvals[?]item="+id+"$"));
+  await expect(client).toHaveURL(
+    new RegExp("/client/approvals[?]item=" + id + "$"),
+  );
   await expect(
     client.getByText("Revision 2 · pending", { exact: true }),
   ).toBeVisible();

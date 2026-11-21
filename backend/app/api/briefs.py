@@ -114,7 +114,7 @@ def listing(
     rows = db.scalars(
         stmt.order_by(Brief.updated_at.desc(), Brief.id).offset((page - 1) * 50).limit(50)
     )
-    return {"data": [briefs.view(db, r) for r in rows]}
+    return {"data": briefs.views(db, rows.all())}
 
 
 @router.post("/projects/{project_id}/briefs", status_code=201)

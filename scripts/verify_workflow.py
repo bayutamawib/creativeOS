@@ -18,12 +18,29 @@ AND (:'revision' = '' OR e.payload->>'revision_id' = :'revision')
 GROUP BY e.id, r.n8n_execution_id, e.created_at
 ORDER BY e.created_at DESC LIMIT 1;
 """
-N8N = """
+N8N = r"""
 const { DatabaseSync } = require('node:sqlite');
 const db = new DatabaseSync('/home/node/.n8n/database.sqlite', {readOnly:true});
 const row = db.prepare('SELECT status FROM execution_entity WHERE id=? AND workflowId=?')
   .get(Number(process.argv[1]), process.argv[2]);
-console.log(row?.status ?? 'pending');
+let status = row?.status;
+if (!status) {
+  // Payload persistence is disabled. n8n rotates its own terminal event journals.
+  const fs = require('node:fs'), dir = '/home/node/.n8n';
+  for (const name of fs.readdirSync(dir).filter(n => /^n8nEventLog(?:-\d+)?\.log$/.test(n))) {
+    for (const line of fs.readFileSync(dir + '/' + name, 'utf8').split('\n')) {
+      try {
+        const event = JSON.parse(line), p = event.payload;
+        if (event.eventName === 'n8n.workflow.success' && p.success === true &&
+            String(p.executionId) === process.argv[1] && p.workflowId === process.argv[2]) {
+          status = 'success'; break;
+        }
+      } catch { /* A writer may still be appending the last line. */ }
+    }
+    if (status) break;
+  }
+}
+console.log(status ?? 'pending');
 """
 
 

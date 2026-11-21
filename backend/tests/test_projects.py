@@ -252,3 +252,16 @@ def test_client_member_directory_scope(browser, workspace):
     assert browser("owner").get(path + "?portal=client").status_code == 200
     assert browser("member").get(path + "?portal=client").status_code == 403
     assert browser("foreign").get(path + "?portal=client").status_code == 404
+
+
+def test_project_pagination_applies_after_client_scope(browser, workspace):
+    client = browser("owner")
+    url = "/api/v1/projects?portal=client&page_size=1&page="
+    pages = [client.get(url + str(i)).json()["data"] for i in (1, 2, 3)]
+    assert [len(page) for page in pages] == [1, 1, 0]
+    assert {row["id"] for page in pages for row in page} == {
+        str(workspace["north-1"]),
+        str(workspace["north-2"]),
+    }
+    assert client.get(url + "0").status_code == 422
+    assert client.get("/api/v1/projects?page_size=101").status_code == 422

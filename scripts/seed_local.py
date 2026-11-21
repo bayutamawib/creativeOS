@@ -14,6 +14,7 @@ if not destination.exists():
     with os.fdopen(os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "w") as out:
         json.dump(accounts, out, indent=2)
 with destination.open() as credentials:
+    os.fchmod(credentials.fileno(), 0o600)
     subprocess.run(["docker", "compose", "exec", "-T", "backend", "python", "-m", "app.seed"],
                    cwd=root, stdin=credentials, check=True)
 print("Credentials: .local/demo-accounts.json")

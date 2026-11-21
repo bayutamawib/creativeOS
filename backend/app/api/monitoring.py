@@ -24,14 +24,22 @@ def events(
     state: Issue | None = None,
 ) -> dict[str, Any]:
     agency.manager_roles(db, identity.user_id)
-    rows = db.scalars(
-        select(Outbox)
+    rows = db.execute(
+        select(Outbox, WorkflowRun.status)
+        .outerjoin(
+            WorkflowRun,
+            (WorkflowRun.event_id == Outbox.id) & (WorkflowRun.attempt == Outbox.attempts),
+        )
         .where(*([Outbox.status == state] if state else []))
         .order_by(Outbox.created_at.desc(), Outbox.id)
         .offset((page - 1) * page_size)
         .limit(page_size)
     )
-    return {"data": [monitor.event_view(db, e) for e in rows]}
+    return {
+        "data": [
+            monitor.event_view(db, e, completed_run=status == "completed") for e, status in rows
+        ]
+    }
 
 
 @router.get("/workflow-runs")

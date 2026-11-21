@@ -14,9 +14,7 @@ body {
   color: var(--color-foreground);
   font-family: "Inter Variable", sans-serif;
 }
-a:focus-visible,
-input:focus-visible,
-button:focus-visible {
+:focus-visible {
   outline: 3px solid var(--color-ring);
   outline-offset: 3px;
 }
@@ -64,4 +62,11 @@ details[open] > summary {
 }
 input[type="checkbox"] {
   width: auto;
+}
+
+#workspace-content {
+  overflow-wrap: anywhere;
+}
+#workspace-content .grid > * {
+  min-width: 0;
 }

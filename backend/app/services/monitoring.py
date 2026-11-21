@@ -103,7 +103,7 @@ def retryable_event(db: Session, e: Outbox) -> bool:
     return unsafe is None
 
 
-def event_view(db: Session, row: Outbox) -> dict[str, Any]:
+def event_view(db: Session, row: Outbox, *, completed_run: bool = False) -> dict[str, Any]:
     return dict(
         id=row.id,
         kind=row.event_type,
@@ -114,7 +114,9 @@ def event_view(db: Session, row: Outbox) -> dict[str, Any]:
         finished_at=row.delivered_at or row.failed_at,
         duration_ms=duration(row.created_at, row.delivered_at or row.failed_at),
         error=row.error_code,
-        retryable=retryable_event(db, row),
+        retryable=False
+        if row.status == "delivered" and completed_run
+        else retryable_event(db, row),
     )
 
 

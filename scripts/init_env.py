@@ -15,6 +15,7 @@ keys = (
     "FORMS_KEY",
 )
 with os.fdopen(os.open(target, os.O_RDWR | os.O_CREAT, 0o600), "r+") as stream:
+    os.fchmod(stream.fileno(), 0o600)
     content = stream.read() or (root / ".env.example").read_text()
     lines = content.splitlines()
     for key in keys:

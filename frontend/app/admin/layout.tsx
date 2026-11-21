@@ -29,7 +29,9 @@ export default async function Layout({ children }: { children: ReactNode }) {
           </>
         )}
       </nav>
-      {children}
+      <div id="workspace-content" tabIndex={-1}>
+        {children}
+      </div>
     </Workspace>
   );
 }

@@ -243,3 +243,34 @@ def test_conflicting_internal_decisions(browser, workspace, draft):
             .select_from(Outbox)
             .where(Outbox.event_type == "content.client_review_requested")
         ) == int(release == 200)
+
+
+def test_queue_query_count_with_additional_revisions(browser, workspace, draft):
+    from sqlalchemy import event
+
+    manager = browser("manager")
+    url, rev = draft
+    counts = []
+    queries = []
+
+    def record(conn, cursor, statement, parameters, context, executemany):
+        queries.append(statement)
+
+    for number in range(1, 5):
+        queries.clear()
+
+        event.listen(engine(), "before_cursor_execute", record)
+        try:
+            rows = manager.get("/api/v1/approvals?portal=agency").json()["data"]
+        finally:
+            event.remove(engine(), "before_cursor_execute", record)
+        assert len(rows[0]["history"]) == number
+        counts.append(len(queries))
+        if number < 4:
+            res = manager.post(
+                url + "/revisions",
+                json={**rev, "headline": "Revised title", "caption": "Revised caption"},
+            )
+            assert res.status_code in {200, 201}, res.text
+            rev = {"revision_id": manager.get(url).json()["data"]["current_revision_id"]}
+    assert len(set(counts)) == 1

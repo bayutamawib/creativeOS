@@ -1,3 +1,5 @@
+from collections import defaultdict
+from collections.abc import Sequence
 from typing import Any
 from uuid import UUID
 
@@ -41,26 +43,41 @@ def fields(row: Brief) -> dict[str, Any]:
 
 
 def view(db: Session, row: Brief) -> dict[str, Any]:
-    ids = list(
-        db.scalars(
-            select(BriefFile.file_id)
-            .where(BriefFile.brief_id == row.id)
-            .order_by(BriefFile.file_id)
+    return views(db, [row])[0]
+
+
+def views(db: Session, rows: Sequence[Brief]) -> list[dict[str, Any]]:
+    if not rows:
+        return []
+    keys = [r.id for r in rows]
+    attached: dict[UUID, list[UUID]] = defaultdict(list)
+    for brief_id, file_id in db.execute(
+        select(BriefFile.brief_id, BriefFile.file_id)
+        .where(BriefFile.brief_id.in_(keys))
+        .order_by(BriefFile.file_id)
+    ):
+        attached[brief_id].append(file_id)
+    snapshots = {
+        (s.brief_id, s.version): s.id
+        for s in db.execute(
+            select(Snapshot.brief_id, Snapshot.version, Snapshot.id)
+            .join(Brief, Brief.id == Snapshot.brief_id)
+            .where(Brief.id.in_(keys), Snapshot.version == Brief.version)
         )
-    )
-    snap = db.scalar(
-        select(Snapshot.id).where(Snapshot.brief_id == row.id, Snapshot.version == row.version)
-    )
-    return {
-        **fields(row),
-        "id": row.id,
-        "project_id": row.project_id,
-        "status": row.status,
-        "version": row.version,
-        "feedback": row.feedback,
-        "attachment_ids": ids,
-        "snapshot_id": snap,
     }
+    return [
+        {
+            **fields(row),
+            "id": row.id,
+            "project_id": row.project_id,
+            "status": row.status,
+            "version": row.version,
+            "feedback": row.feedback,
+            "attachment_ids": attached[row.id],
+            "snapshot_id": snapshots.get((row.id, row.version)),
+        }
+        for row in rows
+    ]
 
 
 def save_fields(db: Session, row: Brief, data: BriefFields) -> None:
