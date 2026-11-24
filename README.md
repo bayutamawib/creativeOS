@@ -1,166 +1,148 @@
 # CREATIVE OS
 
-**AI-Assisted Agency Operations & Workflow Automation Platform**
+**AI-assisted agency operations and workflow automation platform**
 
-CREATIVE OS is a full-stack portfolio MVP that brings together **client acquisition, creative briefs, AI-assisted content production, project and task management, approvals, reporting, and workflow automation** in one platform. It is designed to demonstrate how fragmented agency operations can become more traceable, measurable, and easier to coordinate.
+CREATIVE OS connects client acquisition, briefs, AI-assisted content production, project delivery, approvals, reporting, and automation in one role-aware workspace.
 
-> **Status:** Local portfolio MVP using synthetic data. Not production-ready. A manually confirmed file-access authorization issue remains open; do not deploy publicly or use real confidential client files. See [Known limitations](#known-limitations-and-roadmap).
+## Project overview and business problem
 
-![Creative Studio showing synthetic brief analysis and strategy jobs](docs/screenshots/creative-studio.png)
+Agencies often manage inquiries, briefs, tasks, revisions, approvals, and reporting across disconnected tools. CREATIVE OS creates a traceable record from the first lead through client approval: each brief version, AI generation, task, revision, notification, and report remains tied to an authorized project context.
 
-## Business problem and solution
+This is a local portfolio MVP using synthetic data. It demonstrates integrated product and AI engineering; it is not production-ready.
 
-Creative agencies frequently manage inquiries, briefs, tasks, revision requests, approvals, and progress reporting across disconnected systems. That makes it difficult to answer which brief was approved, who owns the next task, what is overdue, which content revision a client signed off, and whether an automated notification was delivered.
+## Product screenshots
 
-CREATIVE OS connects these records through two role-based workspaces:
-
-- **Agency workspace:** Lead qualification, project creation, team assignment, AI-assisted creative work, Kanban, milestones, operational dashboards, workflow monitoring, and report publication.
-- **Client portal:** Brief submission, released deliverable review, revision requests and approvals, shared project progress, and published reporting.
-
-## Core deliverables
-
-| Domain | Implemented capabilities | Operational purpose |
+| Agency operations | Creative workflow | Client and automation |
 |---|---|---|
-| Client acquisition | Public inquiry, lead qualification, client/project conversion, single-use invitations | Connect leads to active projects |
-| Brief management | Versioned briefs, attachments, agency review, immutable approved snapshots | Preserve requirements and approval history |
-| AI-assisted production | Brief analysis, creative strategy, content planning, copy suggestions, schema validation, human selection | Accelerate drafting while retaining human decisions |
-| Project management | Project membership, task creation and assignment, task templates, milestones, editable project planning and activity timeline | Organize work and its history |
-| Task operations | Kanban and table views, status/priority/assignee filters, due dates, overdue identification | Monitor delivery and workload |
-| Operational dashboards | Agency KPIs, workload and overdue monitoring; client-safe project progress and shared milestones | Make progress visible to appropriate roles |
-| Client approvals | Exact-revision release, feedback, revision requests, project-scoped sign-off | Track which deliverable version was approved |
-| Workflow automation | Background worker, durable event outbox, n8n orchestration, task notifications, scheduled deadline reminders, retry/deduplication | Reduce manual follow-up and support execution tracing |
-| Reporting | Database-derived project metrics, AI-assisted draft summaries, review, publication, JSON export | Ground client reports in recorded data |
-| Evaluation and QA | Synthetic AI evaluations, schema/grounding checks, targeted tests, browser journeys, manual UAT | Document behavior and known limitations |
+| ![Agency dashboard](docs/screenshots/current/agency-dashboard.png) | ![Creative Studio strategy](docs/screenshots/current/creative-studio-creative-strategy.png) | ![Client approval](docs/screenshots/current/client-approvals.png) |
+| ![Projects](docs/screenshots/current/projects.png) | ![Creative Studio copywriting](docs/screenshots/current/creative-studio-copywriting.png) | ![Automation monitoring](docs/screenshots/current/automation-monitoring.png) |
+| ![Kanban](docs/screenshots/current/kanban-task-assignment.png) | ![AI evaluation](docs/screenshots/current/ai-evaluations.png) | ![Agency reports](docs/screenshots/current/agency-reports.png) |
 
-**Scope note:** Sprint 1–3 features were manually checked in a local development environment. They should not be represented as having passed the historical CP6 full regression suite without a fresh run.
+[View the complete 22-image screenshot gallery](docs/PORTFOLIO_SCREENSHOT_GALLERY.md) · [View the audited inventory](docs/PORTFOLIO_SCREENSHOT_INVENTORY.md)
 
-## Demo: one connected business workflow
+## Platform capabilities
 
-1. A prospect submits an inquiry; an Agency Manager qualifies the lead, creates a project, and invites the client.
-2. The client submits a creative brief; the manager reviews and approves a specific version.
-3. The AI-assisted Creative Studio produces structured analysis, strategy, planning, and copy suggestions. Staff choose a direction and edit content.
-4. A manager plans milestones, assigns project members and individual tasks, and tracks delivery on the Kanban board and agency dashboard.
-5. Task assignment and deadline events generate notifications through the local workflow automation stack.
-6. The agency releases an exact content revision. The client reviews it, requests changes if needed, or approves it.
-7. An authorized agency user publishes a project report using stored performance metrics; the client sees the published result.
+### Agency operations
 
-See the [reproducible portfolio walkthrough](docs/PORTFOLIO_DEMO.md) and its screenshot gallery. The walkthrough documents the earlier CP6 baseline; newer Sprint 1–3 screens are covered by their respective implementation notes below.
+- **Agency Dashboard:** workload KPIs, open and overdue tasks, team workload, and project progress.
+- **Leads and Clients:** lead qualification, conversion, client records, and scoped organization management.
+- **Projects and Project Details:** project lifecycle, membership, planned work, milestones, assets, and activity history.
+- **Task Management and Kanban:** assignment, status, priority, due dates, filters, overdue tracking, and board/table views.
+- **Project Timeline:** upcoming work and immutable project activity history.
+- **Brief Management and Attachments:** versioned briefs, approval snapshots, project files, and backend-enforced visibility controls.
 
-| Agency release confirmation | Published client report |
-|---|---|
-| ![Confirmation to release an exact revision](docs/screenshots/release-confirmation.png) | ![Published progress report visible in the client portal](docs/screenshots/published-report.png) |
+### AI-assisted production
 
-## Architecture
+- **Creative Studio:** one workspace for Brief Analysis, Creative Strategy, Content Plan, and Copywriting.
+- **Brief Analysis:** structures objectives, audience, risks, and missing information from an approved snapshot.
+- **Creative Strategy:** proposes two differentiated directions for human selection.
+- **Content Planning:** proposes channel-specific deliverables after direction selection.
+- **Copywriting:** drafts against a selected plan item and preserves revision history.
 
-```mermaid
+### Review and delivery
+
+- **Internal Review and Revisions:** agency feedback, revision history, internal review, and exact-revision release.
+- **Client Portal and Client Approval:** client-scoped project progress, released content review, revision requests, and approval of a specific revision.
+- **Reporting:** project metrics, report generation, review, publication, and client access to published reports.
+- **Notifications and Inbox:** role-scoped workflow notifications for agency and client users.
+- **Automation Monitoring:** outbox events, workflow runs, delivery attempts, durations, correlation IDs, and recovery state.
+- **AI Evaluation:** repeatable fixture evaluations with contract, grounding, and quality checks for human review.
+
+## Four-stage live Groq workflow
+
+The verified Aurora Vale chain was initiated through Creative Studio in the browser. The AI-only worker consumed each queued job automatically while preserving the normal human gates between stages.
+
+Provider/model: compatible / openai/gpt-oss-20b · Prompt: creative-v5
+
+| Stage | Attempt | Status | Quality |
+|---|---:|---|---|
+| Brief Analysis | 1 | completed | clear |
+| Creative Strategy | 1 | completed | clear |
+| Content Plan | 1 | completed | review |
+| Copywriting | 2 | completed | clear |
+
+The Content Plan review finding records an unconfirmed operational assumption. Copywriting completed on attempt 2; the evidence does not establish the cause of the first attempt. “Clear” reflects the implemented quality checks and does not prove factual accuracy or creative effectiveness.
+
+Each job records the approved snapshot, upstream context, provider, model, prompt version, status, attempt count, token usage, latency, validated output, and quality findings. Pydantic contracts validate structured output before proposals are persisted. Direction selection, plan-item selection, internal release, and client approval remain authorized human actions.
+
+## Human-in-the-loop approvals
+
+AI output remains a proposal. The approved brief snapshot is the immutable input boundary. A manager selects one strategy direction, selects a plan item, reviews copy, and releases an exact revision. The client can request changes or approve only the released revision. Quality findings remain visible and are not bypassed by schema validation.
+
+## System architecture and technology stack
+
+~~~mermaid
 flowchart LR
-    Agency[Agency staff] --> Web[Next.js agency and client portals]
-    Client[Clients and inquiries] --> Web
-    Web -->|Session and CSRF| API[FastAPI business API]
+    Users[Agency and client users] --> Web[Next.js portals]
+    Web --> API[FastAPI business API]
     API --> DB[(PostgreSQL)]
-    API --> Files[(Private local file volume)]
-    DB -->|Jobs and outbox| Worker[Python worker]
-    Worker -->|Signed events| N8N[n8n workflows]
-    N8N -->|Authenticated callbacks and schedules| API
-    Worker -->|Structured generation| AI[Fixture or compatible LLM]
-    AI -->|Validated output| Worker
-```
+    API --> Files[(Private file volume)]
+    DB --> Worker[Python worker]
+    Worker --> AI[Fixture or compatible LLM]
+    Worker --> Outbox[Transactional outbox]
+    Outbox --> N8N[n8n workflows]
+    N8N --> API
+~~~
 
-| Layer | Stack | Responsibility |
-|---|---|---|
-| Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS | Role-based workspaces, Kanban, dashboards and reviews |
-| API | Python 3.12, FastAPI, Pydantic, SQLAlchemy | Authentication, authorization, validation and business rules |
-| Storage | PostgreSQL 16, Alembic, private local file volume | State, audit history, immutable versions and outbox events |
-| Automation | Python background worker, n8n 2.48.6 | Async processing, schedules, notifications and retry handling |
-| AI | Fixture provider; compatible HTTPS LLM adapter | Structured generation, validation and provenance |
-| Quality | Pytest, Vitest, Playwright, Docker Compose | Testable services and local end-to-end flows |
+Next.js 16, React 19, TypeScript, Tailwind CSS, FastAPI, Python 3.12, Pydantic, SQLAlchemy, PostgreSQL 16, Alembic, Docker Compose, and n8n. WORKER_MODE=ai separates generation consumption from outbox dispatch; dispatch runs the outbox consumer; all preserves the combined default.
 
-**Architecture principle:** FastAPI owns business decisions and permission checks. PostgreSQL records authoritative state. n8n handles orchestration, while AI produces suggestions that require human review before consequential publication or approval.
+FastAPI owns authorization and business decisions. PostgreSQL stores authoritative state, immutable versions, jobs, audit records, and outbox events. The worker uses leases, claim tokens, retries, and attempt fencing. n8n handles external workflow orchestration and authenticated callbacks.
 
-Further reading: [database design](docs/03_DATABASE_DESIGN.md) · [API specification](docs/04_API_SPECIFICATION.md) · [AI system design](docs/05_AI_SYSTEM_DESIGN.md) · [workflow automation](docs/06_WORKFLOW_AUTOMATION.md).
+## Reliability and security engineering
 
-## AI engineering and governance
+The platform uses idempotency keys, transactional writes, leased consumers, claim-token fencing, bounded retries, notification and reminder deduplication, structured output validation, tenant-scoped authorization, revision-bound approvals, and private file delivery. Attachment visibility is enforced at metadata, listing, preview, thumbnail, stream, and download boundaries.
 
-- **Versioned inputs:** Approved brief versions, brand context and attachment references are captured for downstream generation.
-- **Structured outputs:** Typed response contracts and validation checks help reject malformed or unsupported responses.
-- **Provenance:** Model/provider, prompt version, job status and validation outcomes are recorded.
-- **Human-in-the-loop:** Staff approve creative direction and release; clients approve specific released revisions; report publication is authorized separately.
-- **Controlled evaluation:** Fixture-mode synthetic outputs support repeatable schema and grounding checks. A single synthetic Groq copywriting generation was verified separately; that does not validate real-world editorial quality or other live AI stages.
+Targeted isolated tests covered worker modes, outbox recovery, reminders, media authorization, review workflows, and duplicate prevention. These controls are documented engineering evidence, not a complete production security audit.
 
-See [AI evaluation and implementation evidence](docs/IMPLEMENTATION_STATUS.md) and [AI design](docs/05_AI_SYSTEM_DESIGN.md).
+## Verification evidence
 
-## Verification and UAT
+- Historical CP6 baseline: 66 backend tests, 7 frontend tests, 11 browser tests, automation checks, and fixture evaluation checks. These results are historical and do not represent a fresh full-suite run after every later change.
+- Four-stage Aurora Vale live Groq chain: persisted Brief Analysis, Creative Strategy, Content Plan, and Copywriting records with the metadata shown above.
+- Fixture workflow: approved brief through human direction selection, content plan, task creation, copy revision, internal review, client revision request, and final client approval.
+- Automation: targeted isolated regression evidence for worker modes, leases, outbox behavior, retries, reminders, and notification deduplication.
+- Security: targeted attachment authorization regression evidence covering client-visible files, agency-only files, previews, streams, and direct-ID access.
 
-**Historical CP6 baseline (21 November 2026):**
+See the [AI engineering case study](docs/PORTFOLIO_AI_CASE_STUDY.md) and [portfolio evidence index](docs/PORTFOLIO_EVIDENCE_INDEX.md) for provenance and boundaries.
 
-| Verification | Recorded CP6 result |
-|---|---|
-| Backend | 66 PostgreSQL-backed tests passed; Ruff, strict mypy and migration/drift checks passed |
-| Frontend | 7 Vitest tests passed; lint, type checks and production build passed |
-| Browser | 11 Chrome E2E tests passed, including inquiry-to-publication |
-| Automation | n8n executions were correlated with PostgreSQL events and local inbox delivery; deadline and report schedules exercised |
-| AI fixture evaluation | 50 synthetic outputs met documented contract checks; 6 negative controls rejected |
+## Local setup
 
-These are **historical CP6 results**, not fresh end-to-end regression results for all later changes. See the [CP6 evidence record](docs/IMPLEMENTATION_STATUS.md#cp6-final-integration-and-portfolio-demo).
+Prerequisites: Docker with Compose v2 and Python 3. From the repository root:
 
-**Later project-management development:** Sprint 1–3 added the Kanban/task workspace, activity and planned project timeline, operations dashboards, and assignment/reminder automation. Manual UAT covered the main workflows; targeted tests are described in the sprint documents. During a later full-suite attempt, some tests failed because the historical evidence folder was not mounted at the expected path, so this README does **not** claim a clean full regression for the combined version.
+    python3 scripts/init_env.py
+    docker compose up -d --build --wait --wait-timeout 900
+    python3 scripts/smoke.py
+    python3 scripts/seed_local.py
 
-- [Sprint 1 — Kanban and task management](docs/SPRINT_1_KANBAN_IMPLEMENTATION.md)
-- [Sprint 2 — Project activity timeline](docs/SPRINT_2_ACTIVITY_TIMELINE.md)
-- [Sprint 3 — Operations dashboards and automation](docs/FINAL_SPRINT_OPERATIONS_AUTOMATION.md)
+Open [the application](http://localhost:3100), [the public inquiry form](http://localhost:3100/inquiry), or [local API docs](http://localhost:8100/docs). Seeded credentials are stored only in the Git-ignored .local/demo-accounts.json; do not publish that file. Fixture mode and local file storage are the normal development defaults.
 
-Synthetic tests demonstrate behavior against defined contracts; model usefulness, security, and client-facing accuracy require additional real-world evaluation.
+Stop the stack while retaining volumes with:
 
-## Run locally
+    docker compose down
 
-**Prerequisites:** Docker with Compose v2 and Python 3. From the repository root:
+See the [local operations guide](docs/LOCAL_OPERATIONS.md) and [portfolio walkthrough](docs/PORTFOLIO_DEMO.md) for configuration and synthetic workflow steps.
 
-```sh
-python3 scripts/init_env.py
-docker compose up -d --build --wait --wait-timeout 900
-python3 scripts/smoke.py
-python3 scripts/seed_local.py
-```
+## Known limitations
 
-Open the [application](http://localhost:3100), [public inquiry form](http://localhost:3100/inquiry), or [local API docs](http://localhost:8100/docs).
+- This is a local Compose portfolio MVP, not a production deployment.
+- The live AI evidence is a small synthetic sample. Quality checks are conservative and incomplete; one Content Plan result requires review.
+- External integrations such as Google Drive, Google Forms forwarding, transactional email, and WhatsApp remain partial or unverified.
+- n8n credential retention, deployment hardening, observability, and broader security review still require production work.
+- The bounded outbox lease leaves a documented risk when an external workflow exceeds its lease window.
+- Current screenshot review excludes one empty client reports page and one duplicate timeline capture; both files remain preserved locally.
 
-Use `localhost` for browser sessions. Seeded login identities include `manager@example.com` and `lead@example.com`. Generated passwords are written to the **Git-ignored local file** `.local/demo-accounts.json`; do not share or commit it. The default demo uses `fixture-v1`, local file storage and a development inbox.
+## Engineering documentation
 
-To stop the stack while retaining volumes:
+- [AI engineering case study](docs/PORTFOLIO_AI_CASE_STUDY.md)
+- [Portfolio evidence index](docs/PORTFOLIO_EVIDENCE_INDEX.md)
+- [Complete screenshot gallery](docs/PORTFOLIO_SCREENSHOT_GALLERY.md)
+- [Screenshot inventory](docs/PORTFOLIO_SCREENSHOT_INVENTORY.md)
+- [Implementation status](docs/IMPLEMENTATION_STATUS.md)
+- [Local operations](docs/LOCAL_OPERATIONS.md)
+- [API specification](docs/04_API_SPECIFICATION.md)
+- [AI system design](docs/05_AI_SYSTEM_DESIGN.md)
+- [Workflow automation](docs/06_WORKFLOW_AUTOMATION.md)
+- [Database design](docs/03_DATABASE_DESIGN.md)
 
-```sh
-docker compose down
-```
+## Portfolio focus
 
-See the [demo walkthrough](docs/PORTFOLIO_DEMO.md) and [local operations guide](docs/LOCAL_OPERATIONS.md) for configuration, isolated test setups and troubleshooting.
-
-## Known limitations and roadmap
-
-**Security blocker — confirmed in manual UAT:** A client user could download an attachment marked **Agency only** from a project interface. Backend authorization must be corrected across file listings, detail, preview and download endpoints, with negative tests for client access. **Do not expose this application as a public production service or load sensitive customer documents until this is fixed and verified.**
-
-Other documented limitations include temporary n8n JWT request-header persistence before pruning, unverified live Google Drive integration, Google Forms upstream forwarding not configured, and limited real-LLM quality evidence. See [local operations and hardening](docs/LOCAL_OPERATIONS.md#n8n-jwt-retention-and-production-hardening).
-
-**Planned, not yet completed:**
-
-- Repair and audit file access controls and production security.
-- Add a red unread-count badge on Inbox, mark-all-read controls, and notification preferences.
-- Integrate transactional email and opt-in WhatsApp notifications for assignment, deadlines, and relevant approvals.
-- Complete UI polish, deployment hardening, and refreshed full regression testing.
-- Evaluate organization-specific external system integrations based on future requirements.
-
-## Documentation index
-
-| Document | Purpose |
-|---|---|
-| [Portfolio demo and screenshots](docs/PORTFOLIO_DEMO.md) | Step-by-step synthetic client journey |
-| [Local operations](docs/LOCAL_OPERATIONS.md) | Environment, workflows, troubleshooting and hardening |
-| [Implementation status](docs/IMPLEMENTATION_STATUS.md) | Checkpoints, tests and technical evidence |
-| [Sprint 1](docs/SPRINT_1_KANBAN_IMPLEMENTATION.md) | Task and Kanban features |
-| [Sprint 2](docs/SPRINT_2_ACTIVITY_TIMELINE.md) | Project activity timeline |
-| [Sprint 3](docs/FINAL_SPRINT_OPERATIONS_AUTOMATION.md) | Dashboards and automation |
-| [API specification](docs/04_API_SPECIFICATION.md) | Contracts and access expectations |
-| [AI system design](docs/05_AI_SYSTEM_DESIGN.md) | Generation contracts and review controls |
-
----
-
-**Portfolio focus:** Applied AI engineering · full-stack integration · operational dashboards · workflow orchestration · business process automation · human-governed AI.
+Applied AI engineering · structured generation · workflow orchestration · human-governed approvals · full-stack integration · reliability and authorization engineering

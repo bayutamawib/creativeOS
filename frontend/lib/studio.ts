@@ -16,6 +16,7 @@ export type Job = {
   attempt: number;
   output: Record<string, Json> | null;
   error_code: string | null;
+  quality_findings: Record<string, Json> | null;
   direction_id: string | null;
   revision_id: string | null;
   parameters: {

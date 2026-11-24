@@ -7,6 +7,12 @@ import { mutate } from "@/lib/browser-api";
 function label(value: string) {
   return value.replaceAll("_", " ");
 }
+const stages = [
+  ["brief_analysis", "Brief Analysis"],
+  ["creative_strategy", "Creative Strategy"],
+  ["content_plan", "Content Plan"],
+  ["copywriting", "Copywriting"],
+] as const;
 function Value({ value }: { value: Json }) {
   if (value === null) return <span>—</span>;
   if (Array.isArray(value))
@@ -49,6 +55,7 @@ export function CreativeStudio({
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const [retryKeys, setRetryKeys] = useState<Record<string, string>>({});
+  const [stage, setStage] = useState<(typeof stages)[number][0]>("brief_analysis");
   const brief = data.brief,
     base = "/briefs/" + brief.id;
   const watching =
@@ -123,6 +130,15 @@ export function CreativeStudio({
   const analysis = data.jobs.find(
     (j) => j.generation_type === "brief_analysis" && j.status === "completed",
   );
+  const stageJobs = data.jobs.filter((j) => j.generation_type === stage);
+  const latestJob = stageJobs[0];
+  const olderJobs = stageJobs.slice(1);
+  const hasCritical = (j: Job | undefined) =>
+    j?.quality_findings?.disposition === "critical";
+  const statusText = (j: Job | undefined) =>
+    !j ? "Not generated" : hasCritical(j) ? "Needs review · critical findings" : j.status === "completed" ? "Generated" : label(j.status);
+  const statusClass = (j: Job | undefined) =>
+    !j || hasCritical(j) ? "border-amber-300 bg-amber-50 text-amber-950" : j.status === "completed" ? "border-emerald-200 bg-emerald-50 text-emerald-950" : "border-border bg-slate-50";
   const retry = (j: Job) => {
     if (j.generation_type === "copywriting") {
       const item = data.items.find(
@@ -184,6 +200,15 @@ export function CreativeStudio({
             <p>Approve the current brief version to start creative work.</p>
           ) : (
             <>
+              <nav aria-label="Creative Studio stages" className="grid gap-2 sm:grid-cols-4">
+                {stages.map(([id, name], index) => (
+                  <button key={id} type="button" aria-current={stage === id ? "step" : undefined} onClick={() => setStage(id)} className={`rounded-lg border p-3 text-left ${stage === id ? "border-primary bg-primary/10" : "border-border bg-white"}`}>
+                    <span className="text-xs font-semibold uppercase text-slate-500">Step {index + 1}</span>
+                    <span className="block font-semibold">{name}</span>
+                    <span className="text-xs text-slate-600">{statusText(data.jobs.find((j) => j.generation_type === id))}</span>
+                  </button>
+                ))}
+              </nav>
               <section className="space-y-3">
                 <h3>Generation history</h3>
                 <div className="flex flex-wrap gap-2">
@@ -212,28 +237,27 @@ export function CreativeStudio({
                     {w.execution_id && " · n8n #" + w.execution_id}
                   </p>
                 ))}
-                {data.jobs.map((j) => (
-                  <article key={j.id} className="border-b border-border py-2">
-                    <strong>{label(j.generation_type)}</strong> · {j.status}
+                {latestJob ? <article className={`rounded-lg border p-4 ${statusClass(latestJob)}`}>
+                    <strong>{statusText(latestJob)}</strong>
                     <p className="text-xs">
-                      {j.provider} / {j.model} · {j.prompt_version} · Attempt{" "}
-                      {j.attempt}
+                      {latestJob.provider} / {latestJob.model} · {latestJob.prompt_version} · Attempt {latestJob.attempt}
                     </p>
-                    {j.error_code && <p>{label(j.error_code)}</p>}
-                    {j.status === "failed" &&
-                      button("Retry " + label(j.generation_type), () =>
-                        retry(j),
-                      )}
-                    {j.output && (
+                    {latestJob.error_code && <p>{label(latestJob.error_code)}</p>}
+                    {latestJob.quality_findings && <details><summary>Quality findings</summary><Value value={latestJob.quality_findings} /></details>}
+                    {latestJob.status === "failed" && button("Retry " + label(latestJob.generation_type), () => retry(latestJob))}
+                    {latestJob.output && (
                       <details>
                         <summary>Validated output</summary>
-                        <Value value={j.output} />
+                        <Value value={latestJob.output} />
                       </details>
                     )}
-                  </article>
-                ))}
+                  </article> : <p className="rounded-lg border border-dashed border-border p-6 text-slate-600">No generation has been created for this stage yet.</p>}
+                {olderJobs.length > 0 && <details>
+                  <summary className="cursor-pointer font-semibold">Older generation history ({olderJobs.length})</summary>
+                  <div className="mt-3 space-y-2">{olderJobs.map((j) => <article key={j.id} className={`rounded-lg border p-3 ${statusClass(j)}`}><strong>{statusText(j)}</strong><p className="text-xs">{j.provider} / {j.model} · {j.prompt_version} · Attempt {j.attempt}</p>{j.quality_findings && <details><summary>Quality findings</summary><Value value={j.quality_findings} /></details>}{j.output && <details><summary>Validated output</summary><Value value={j.output} /></details>}</article>)}</div>
+                </details>}
               </section>
-              {["direction", "plan_item"].map((kind) => (
+              {["direction", "plan_item"].filter((kind) => stage === (kind === "direction" ? "creative_strategy" : "content_plan")).map((kind) => (
                 <section key={kind} className="space-y-3">
                   <h3>
                     {kind === "direction"
@@ -304,7 +328,7 @@ export function CreativeStudio({
                     ))}
                 </section>
               ))}
-              {data.items.map((item) => (
+              {stage === "copywriting" && data.items.map((item) => (
                 <section
                   key={item.id}
                   className="space-y-3 rounded-lg border border-border p-4"

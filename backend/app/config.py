@@ -5,6 +5,8 @@ from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings
 from sqlalchemy import URL
 
+WorkerMode = Literal["all", "ai", "dispatch"]
+
 
 class Settings(BaseSettings):
     agency_timezone: str = "Asia/Jakarta"
@@ -14,6 +16,7 @@ class Settings(BaseSettings):
     ai_api_key: SecretStr | None = None
     ai_max_output_tokens: int = Field(2000, ge=128, le=8000)
     ai_timeout_seconds: int = Field(15, ge=1, le=30)
+    worker_mode: WorkerMode = "all"
     file_provider: Literal["local", "google_drive"] = "local"
     video_max_bytes: int = Field(50 * 1024 * 1024, ge=1024 * 1024, le=500 * 1024 * 1024)
     drive_access_token: SecretStr | None = None

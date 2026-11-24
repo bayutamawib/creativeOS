@@ -2,6 +2,7 @@
 
 import logging
 import signal
+from collections.abc import Callable
 from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 from threading import Event
@@ -9,9 +10,22 @@ from threading import Event
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.ai.runner import execute_one
+from app.config import settings
 from app.db import database_ready
 from app.logging_config import configure_logging
 from app.services.workflows import dispatch
+
+Consumer = tuple[str, Callable[[], bool]]
+
+
+def consumers(mode: str) -> tuple[Consumer, ...]:
+    if mode == "all":
+        return (("dispatcher", dispatch), ("generation", execute_one))
+    if mode == "ai":
+        return (("generation", execute_one),)
+    if mode == "dispatch":
+        return (("dispatcher", dispatch),)
+    raise ValueError(f"Unsupported worker mode: {mode}")
 
 
 def run() -> None:
@@ -22,12 +36,13 @@ def run() -> None:
     signal.signal(signal.SIGINT, lambda *_: stop.set())
     heartbeat = Path("/tmp/creativeos-worker-heartbeat")
     jobs: dict[str, Future[bool]] = {}
-    with ThreadPoolExecutor(max_workers=2) as pool:
+    active_consumers = consumers(settings().worker_mode)
+    with ThreadPoolExecutor(max_workers=len(active_consumers)) as pool:
         while not stop.is_set():
             try:
                 if database_ready():
                     heartbeat.touch()
-                    for label, fn in (("dispatcher", dispatch), ("generation", execute_one)):
+                    for label, fn in active_consumers:
                         future = jobs.get(label)
                         if future is None or future.done():
                             if future and future.exception():

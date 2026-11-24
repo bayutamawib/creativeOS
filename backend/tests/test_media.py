@@ -104,12 +104,12 @@ def test_video_release_freezes_cover_and_client_decision(browser, workspace):
     assert owner.get(f"{BASE}/files/{cover}?portal=client").status_code == 404
     manager.post(url + "/submit-for-internal-review", json=rev)
     assert manager.post(url + "/approve-and-release", json=rev).status_code == 200
-    assert owner.get(f"{BASE}/files/{video}/stream?portal=client", headers={"Range": "bytes=0-3"}).status_code == 206
-    assert owner.get(f"{BASE}/files/{video}/download?portal=client").content == sample_mp4()
-    assert owner.get(f"{BASE}/files/{cover}/thumbnail?portal=client").status_code == 200
+    assert owner.get(f"{BASE}/files/{video}/stream?portal=client", headers={"Range": "bytes=0-3"}).status_code == 404
+    assert owner.get(f"{BASE}/files/{video}/download?portal=client").status_code == 404
+    assert owner.get(f"{BASE}/files/{cover}/thumbnail?portal=client").status_code == 404
     assert foreign.get(f"{BASE}/files/{video}/stream").status_code == 404
     item = owner.get(f"{BASE}/approvals?portal=client&project_id={pid}").json()["data"][0]
-    assert item["history"][0]["files"][0]["cover_file_id"] == cover
+    assert item["history"][0]["files"] == []
     assert owner.post(url + "/client-approval", json=rev).status_code == 200
     with Session(engine()) as db, db.begin():
         db.get_one(ClientMembership, workspace["owner_membership"]).is_active = False
@@ -122,13 +122,15 @@ def test_media_authorization_covers_and_no_shared_cache(browser, workspace):
     private = image_upload(manager, pid)
     shared = image_upload(owner, pid, "shared.png", "client_visible")
     other = image_upload(manager, workspace["south-1"])
-    for kind in ("thumbnail", "preview"):
-        path = f"{BASE}/files/{private}/{kind}"
+    for suffix in ("", "/download", "/thumbnail", "/preview"):
+        path = f"{BASE}/files/{private}{suffix}"
         assert browser().get(path).status_code == 401
         assert owner.get(path + "?portal=client").status_code == 404
-        assert foreign.get(path).status_code == 404
-        assert staff.get(path + "?portal=agency").status_code == 404
+        assert foreign.get(path + "?portal=client").status_code == 404
         assert manager.get(path).status_code == 200
+    for kind in ("thumbnail", "preview"):
+        path = f"{BASE}/files/{private}/{kind}"
+        assert staff.get(path + "?portal=agency").status_code == 404
         res = owner.get(f"{BASE}/files/{shared}/{kind}?portal=client")
         assert res.status_code == 200
         assert res.headers["cache-control"] == "private, no-store"
@@ -138,6 +140,9 @@ def test_media_authorization_covers_and_no_shared_cache(browser, workspace):
         assert Image.open(BytesIO(res.content)).size == (
             (640, 427) if kind == "thumbnail" else (900, 600)
         )
+    assert owner.get(f"{BASE}/files/{shared}/download?portal=client").status_code == 200
+    listing = owner.get(f"{BASE}/files?project_id={pid}&portal=client").json()["data"]
+    assert shared in [row["id"] for row in listing] and private not in [row["id"] for row in listing]
     rows = owner.get(BASE + "/projects?portal=client").json()["data"]
     assert next(p for p in rows if p["id"] == str(pid))["cover_file_id"] == shared
     assert all(p["cover_file_id"] != other for p in rows)
@@ -180,14 +185,12 @@ def test_exact_revision_images_and_membership_revocation(browser, workspace):
     rows = owner.get(f"{BASE}/approvals?portal=client&project_id={pid}").json()["data"]
     item = next(i for i in rows if i["id"] == url.split("/")[-1])
     assert len(item["history"]) == 1
-    assert item["history"][0]["files"] == [
-        {"id": released, "name": "released.png", "mime_type": "image/png"}
-    ]
-    assert owner.get(f"{BASE}/files/{released}/preview").status_code == 200
+    assert item["history"][0]["files"] == []
+    assert owner.get(f"{BASE}/files/{released}/preview").status_code == 404
     assert owner.get(f"{BASE}/files/{draft}/thumbnail").status_code == 404
     assert foreign.get(f"{BASE}/files/{released}/preview").status_code == 404
     listing = owner.get(f"{BASE}/files?project_id={pid}&portal=client").json()["data"]
-    assert released in [f["id"] for f in listing] and draft not in [f["id"] for f in listing]
+    assert released not in [f["id"] for f in listing] and draft not in [f["id"] for f in listing]
     with Session(engine()) as db, db.begin():
         db.get_one(ClientMembership, workspace["owner_membership"]).is_active = False
     assert owner.get(f"{BASE}/files/{released}/preview").status_code == 404

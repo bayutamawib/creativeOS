@@ -21,19 +21,20 @@ from app.config import settings
 
 
 def test_creative_v2_prompts_and_v1_replay():
-    assert PROMPT_VERSION == "creative-v2" and REPORT_PROMPT_VERSION == "creative-v1"
+    assert PROMPT_VERSION == "creative-v5" and REPORT_PROMPT_VERSION == "creative-v1"
     assert prompt_for("copywriting", "creative-v1") == PROMPTS_V1["copywriting"]
     assert "audience" in prompt_for("brief_analysis", PROMPT_VERSION)
     assert "editorial themes" in prompt_for("brief_analysis", PROMPT_VERSION)
-    assert "different narrative angles" in prompt_for("creative_strategy", PROMPT_VERSION)
+    assert "substantively different" in prompt_for("creative_strategy", PROMPT_VERSION)
     assert "requested formats" in prompt_for("content_plan", PROMPT_VERSION)
     assert "destination-neutral" in prompt_for("copywriting", PROMPT_VERSION)
     assert "one structured copy suggestion" in prompt_for("copywriting", PROMPT_VERSION)
     assert "variants" not in prompt_for("copywriting", PROMPT_VERSION)
     assert adapter("fixture", "creative-v1") and adapter("fixture", "creative-v2")
-    assert adapter("fixture", "creative-v3")
+    assert adapter("fixture", "creative-v3") and adapter("fixture", "creative-v4")
+    assert adapter("fixture", "creative-v5")
     with pytest.raises(GenerationFailure, match="unsupported_prompt_version"):
-        adapter("fixture", "creative-v4")
+        adapter("fixture", "creative-v6")
 
 
 def test_compatible_adapter_uses_job_prompt_version_without_network(monkeypatch):

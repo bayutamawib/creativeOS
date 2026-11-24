@@ -146,13 +146,13 @@ def test_human_gates_copy_and_idempotent_business_writes(browser, workspace):
         assert job.input_snapshot["direction"] == db.get_one(Proposal, UUID(direction)).payload
         assert (
             job.requested_by == workspace["manager"]
-            and job.prompt_version == "creative-v2"
+            and job.prompt_version == "creative-v4"
             and job.provider == "fixture"
             and job.parameters["target_count"] == 2
         )
         for key in copies:
             copy = db.get_one(Generation, UUID(key))
-            assert copy.prompt_version == "creative-v2" and "target_count" not in copy.parameters
+            assert copy.prompt_version == "creative-v4" and "target_count" not in copy.parameters
 
 
 def test_critical_claims_block_proposal_selection_and_copy_save(browser, workspace):

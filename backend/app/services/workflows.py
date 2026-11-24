@@ -44,6 +44,24 @@ ROUTES = {
     "task.assigned": ("WF-C", "creative-task-assigned"),
 }
 MAX_ATTEMPTS = 8
+DISPATCH_TIMEOUTS = {
+    "creative-brief-approved": 45,
+    "creative-direction-approved": 45,
+    "creative-content-review": 12,
+    "creative-report-notification": 12,
+    "creative-task-reminder": 12,
+    "creative-lead-created": 12,
+    "creative-task-assigned": 12,
+}
+LEASE_GRACE_SECONDS = 30
+
+
+def dispatch_timeout(path: str) -> int:
+    return DISPATCH_TIMEOUTS.get(path, 12)
+
+
+def dispatch_lease_seconds(path: str) -> int:
+    return dispatch_timeout(path) + LEASE_GRACE_SECONDS
 
 
 def secret(value: SecretStr | None) -> str:
@@ -290,7 +308,7 @@ def claim(db: Session) -> tuple[UUID, UUID, str, str] | None:
         return None
     row.status = "processing"
     row.claim_token = uuid4()
-    row.claim_expires_at = current + timedelta(seconds=60)
+    row.claim_expires_at = current + timedelta(seconds=dispatch_lease_seconds(ROUTES[row.event_type][1]))
     row.attempts += 1
     return row.id, row.claim_token, ROUTES[row.event_type][1], envelope(row)
 
@@ -376,9 +394,7 @@ def dispatch() -> bool:
     try:
         with urlopen(
             request,
-            timeout=45
-            if path in {"creative-brief-approved", "creative-direction-approved"}
-            else 12,
+            timeout=dispatch_timeout(path),
         ) as response:
             result = json.load(response)
             if isinstance(result, dict):

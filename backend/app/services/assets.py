@@ -17,7 +17,7 @@ from app.brief_models import BriefFile, FileAsset, SnapshotFile
 from app.config import settings
 from app.models import Project
 from app.project_inputs import Portal
-from app.review_models import Review, RevisionFile
+from app.review_models import RevisionFile
 from app.security import now
 from app.services import agency, projects
 from app.services.drive import DriveStorage
@@ -224,13 +224,7 @@ def visible(
         projects.access(db, actor, project_id, portal)
         stmt = stmt.where(FileAsset.project_id == project_id)
     if portal == "client":
-        released = (
-            select(RevisionFile.file_id)
-            .join(Review, Review.revision_id == RevisionFile.revision_id)
-            .where(Review.stage == "client")
-        )
-        released_covers = select(FileAsset.cover_file_id).where(FileAsset.id.in_(released))
-        stmt = stmt.where((FileAsset.visibility == "client_visible") | FileAsset.id.in_(released) | FileAsset.id.in_(released_covers))
+        stmt = stmt.where(FileAsset.visibility == "client_visible")
     return stmt
 
 

@@ -205,7 +205,7 @@ def test_file_release_and_revocation_race(browser, workspace, draft):
     rev = {"revision_id": manager.get(url).json()["data"]["current_revision_id"]}
     manager.post(url + "/submit-for-internal-review", json=rev)
     assert manager.post(url + "/approve-and-release", json=rev).status_code == 200
-    assert owner.get(download).content == b"Private layout"
+    assert owner.get(download).status_code == 404
     assert browser("foreign").get(download).status_code == 404
     grant = f"/api/v1/projects/{workspace['north-1']}/approval-delegations/{workspace['member_membership']}"
     owner.put(grant)

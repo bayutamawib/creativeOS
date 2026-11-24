@@ -40,6 +40,13 @@ def test_atomic_outbox_and_recovery(workspace):
         assert workflows.claim(db) is None
 
 
+def test_dispatch_lease_is_bounded_after_route_timeout():
+    assert workflows.dispatch_timeout("creative-direction-approved") == 45
+    assert workflows.dispatch_lease_seconds("creative-direction-approved") == 75
+    assert workflows.dispatch_timeout("creative-task-assigned") == 12
+    assert workflows.dispatch_lease_seconds("creative-task-assigned") == 42
+
+
 def test_authenticated_retry_and_delivery(browser):
     guest = browser()
     guest.post(

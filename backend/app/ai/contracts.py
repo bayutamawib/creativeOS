@@ -47,7 +47,7 @@ class Direction(Structured):
 
 
 class Strategy(Structured):
-    creative_directions: Annotated[list[Direction], Field(min_length=1, max_length=5)]
+    creative_directions: Annotated[list[Direction], Field(min_length=2, max_length=2)]
 
 
 class PlanItem(Structured):
@@ -91,7 +91,7 @@ SCHEMAS: dict[str, type[Structured]] = {
     "copywriting": Copy,
     "report_summary": Summary,
 }
-PROMPT_VERSION = "creative-v2"
+PROMPT_VERSION = "creative-v5"
 REPORT_PROMPT_VERSION = "creative-v1"
 PROMPTS_V1 = {
     "brief_analysis": "Summarize the supplied objective and explicit requirements. Identify missing information. Label suggested pillars and distinguish them from client facts.",
@@ -153,10 +153,42 @@ PROMPTS_V3 = PROMPTS_V2 | {
         "covering the requested Instagram carousel, Instagram caption, and Website section."
     )
 }
+PROMPTS_V4 = PROMPTS_V3 | {
+    "creative_strategy": (
+        "Use the approved brief and validated analysis as the source of truth. Return exactly TWO "
+        "creative directions, each complete with every schema field. Make them substantively "
+        "different in narrative angle, audience motivation, and execution—not merely renamed or "
+        "reformatted versions. Label audience insights as hypotheses unless supported by research. "
+        "Separate verified brief facts from creative proposals. Do not invent product varieties, "
+        "ingredients, certifications, numerical claims, geographic availability, performance claims, "
+        "testimonials, or operational promises. Visual directions must be hypothetical compositions: "
+        "describe style, lighting, framing, and proposed scenarios without implying that depicted "
+        "products, ingredients, assets, or attributes are confirmed. Mark proposed visuals explicitly "
+        "as concepts requiring asset and rights confirmation. Preserve every brief restriction and "
+        "use only the permitted channels."
+    )
+}
+PROMPTS_V5 = PROMPTS_V4 | {
+    "creative_strategy": (
+        "Use the approved brief and validated analysis as the only factual source. Return exactly TWO "
+        "substantively different directions with every schema field. Treat all visual direction as "
+        "fictional art direction, not a depiction of the product: do not mention or imply freshness, "
+        "harvesting, provenance, ingredients, fruit or produce varieties, taste, quality, nutrition, "
+        "certification, performance, availability, geography, testimonials, or other product attributes "
+        "unless explicitly verified in the brief. Safe examples: 'Proposed abstract still life with "
+        "soft window light and unidentifiable shapes; assets require confirmation' or 'Hypothetical "
+        "editorial collage using color, texture, and typography only; no product or ingredient is "
+        "asserted.' Do not use concrete food, farm, harvest, or product imagery as an illustrative "
+        "example. Frame every unsupported audience insight as a hypothesis. Preserve all restrictions "
+        "and distinguish verified facts from creative proposals."
+    )
+}
 PROMPT_REGISTRY = {
     "creative-v1": PROMPTS_V1,
     "creative-v2": PROMPTS_V2,
     "creative-v3": PROMPTS_V3,
+    "creative-v4": PROMPTS_V4,
+    "creative-v5": PROMPTS_V5,
 }
 
 
