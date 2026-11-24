@@ -37,6 +37,7 @@ class Generation(ProjectRecord):
     prompt_version: Mapped[str]
     status: Mapped[str] = mapped_column(server_default="pending")
     output: Mapped[dict[str, Any] | None] = mapped_column(JSONB(none_as_null=True))
+    quality_findings: Mapped[dict[str, Any] | None] = mapped_column(JSONB(none_as_null=True))
     error_code: Mapped[str | None]
     retry_allowance: Mapped[int] = mapped_column(server_default="0")
     attempt: Mapped[int] = mapped_column(server_default="0")

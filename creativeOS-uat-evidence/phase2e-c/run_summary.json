@@ -1,0 +1,27 @@
+{
+  "baseline_sha256": {
+    "brief_analysis": "375d508c1e6e598da11275f7f6c58ccbaca4566b7c7ef620db125edc5d3f22af",
+    "creative_strategy": "1b23538c0e1354ed75a8451026a0ebde89bf30ac71063d8f221984b44016482c",
+    "content_plan": "86a90eba6d471273ac6c3a4408cf2d815658c204e6375966ac2db22905bc77c0",
+    "copywriting": "e494e454f5388a0cb02f1fa0e1550e772ed39e2d295d358950e760aad54914d4"
+  },
+  "model": "openai/gpt-oss-20b",
+  "prompt_version": "creative-v2",
+  "generation_requests": 1,
+  "stages": [
+    {
+      "stage": "brief_analysis",
+      "status": "capture_failed",
+      "input_tokens": 1189,
+      "output_tokens": 948,
+      "claim_disposition": null,
+      "error_code": "local_capture_attribute_error",
+      "validation_outcome": "not_evaluated"
+    }
+  ],
+  "total_input_tokens": 1189,
+  "total_output_tokens": 948,
+  "editorial_scores": "pending_owner_review",
+  "publication": "none",
+  "run_status": "stopped_request_cap_prevents_four_stage_completion"
+}

@@ -1,5 +1,80 @@
 # CREATIVE OS — Implementation status
 
+## CP8-B Secure Video Media Management — owner review
+
+**Implemented and verified locally on 22 November 2026.** CP8-A's report, authorization paths, media tests, and mobile gallery capture were reviewed before extension. The CP8-A report records its own original acceptance evidence; this checkpoint reran the image media tests as part of the current suite. Existing working changes and the owner's `cek_groq.py` remain uncommitted and untouched.
+
+MP4 uploads use the existing authenticated file route and private local volume. `VIDEO_MAX_BYTES` defaults to 50 MiB and is configurable from 1–500 MiB. The server checks filename/media type and complete top-level MP4 boxes while writing bounded request chunks to a private temporary file, then hashes and atomically stores it. A manual PNG/JPEG cover is optional; a same-project foreign key and service validation enforce matching project and visibility. The cover is locked when the video enters a revision. Project cards select the newest authorized image or video and show a play indicator; video without a cover uses gradient artwork. Creative Asset and exact revision galleries show video with native controls, a Fullscreen action, and authenticated seeking. The existing agency release and client decision bind to the same revision.
+
+The video stream and download routes reauthorize each request and verify the stored hash with 1 MiB reads before returning 64 KiB chunks. Full GET/HEAD, valid single Range, and invalid or unsatisfiable Range return 200, 206, and 416 respectively. Video bytes are never served from a public static path or held as a complete backend byte array. An internal cover becomes available to the owning client only with its released video revision. Migration `0015_video_cover` adds the nullable same-project cover reference.
+
+### Executed verification
+
+| Check | Result |
+|---|---|
+| Isolated backend `ruff check app alembic tests/test_media.py`, strict `mypy`, `alembic upgrade head`, `alembic check` | Passed; no schema drift |
+| PostgreSQL `pytest -q --tb=short tests/test_media.py` | 4 passed; includes CP8-A image cases and CP8-B validation, configurable limit, cover scope, 200/206/416, release and revocation. One upstream TestClient warning |
+| PostgreSQL `pytest -q --tb=short tests/test_projects.py tests/test_reviews.py` | 15 passed; one upstream TestClient warning |
+| Frontend `npm run typecheck`, `npm run lint`, `npm test` | Passed; seven Vitest tests |
+| Isolated production backend/frontend Docker build and health | Passed |
+| Chrome Playwright `video.spec.ts` on isolated fixture stack | 1 passed in 2.4 minutes on the final run. Chrome recorded a small synthetic H.264 MP4. Covered optional cover, project fallback/play indicator, both portal players, fullscreen, seek, 206 through Next.js, 404 before release, released revision video, and client approval |
+
+The first browser review attempt used a client-visible project video as an internal revision attachment; FastAPI correctly returned 422 under the existing private-attachment contract. The test now uploads a separate internal video and verifies its pre-release denial. Earlier test harness attempts were corrected before the final pass. No live LLM call was made.
+
+### Limits and review
+
+Video is local-storage only. The container parser verifies the top-level structure and signature, not codec compatibility or semantic correctness of every nested atom. Browser playback depends on its codec support. Every Range request rehashes the whole file before streaming, so seeking large files trades CPU and disk reads for integrity without a shared cache. One byte range per request is supported; multiple ranges return 416. A process crash during upload can leave a private `.incoming-*` temporary file for operator cleanup. No transcoding or timestamp comments are included. No commit, push, or external deployment was performed.
+
+### Main local OAT environment · 22 November 2026
+
+The existing PostgreSQL volume was preserved and advanced from `0014_schedule_heartbeat` to non-destructive `0015_video_cover` through the Compose migration service. Backend and frontend were rebuilt; the worker was recreated from the updated backend image after its old schema check became unhealthy. All five services now report healthy. The local configuration uses fixture AI (`fixture-v1`) and private local files; its model label had retained the Groq name and was corrected without changing credentials. The repository smoke probe passed API readiness, the protected session boundary, web, and n8n. Main-stack Chrome checks passed `video.spec.ts` (one test, 36.3 seconds) and `media.spec.ts` (one test, 32.9 seconds). The first image-test attempt stopped before any writes because the fixture-mode guard detected the stale model label; it passed after correction. The video test created a synthetic project, [Video review e2ee17](http://localhost:3100/admin/projects/a14f64ac-00b9-4d2b-b22c-cf909a79f22c), and the image test created its own synthetic project. Existing projects were not edited.
+
+Owner OAT entry points: agency and client users sign in at `http://localhost:3100/login`, then use `/admin/dashboard` or `/client/dashboard` according to role. `manager@example.com` and `lead@example.com` are the seeded agency and client examples. Passwords remain only in the owner-local, Git-ignored `.local/demo-accounts.json`. Use the synthetic projects or create a new clearly named test project. Check image card and preview; MP4 upload with and without a cover; project play artwork; video play, seek, and fullscreen; 404 for an internal video before release; exact revision release; client video preview and approval; and continuing visibility of an older released revision after a new draft. CP8-B awaits manual owner acceptance. No CP9 work has begun.
+
+## CP8-A Creative Media Gallery and Visual UX
+
+**Verified locally on 22 November 2026.** CP7 was audited with the existing secret scanner and committed as `f60cee5` before implementation. The owner’s untracked `cek_groq.py` troubleshooting file was retained outside that baseline. Existing Git history and PostgreSQL, n8n and private file volumes were preserved.
+
+Project lists now use responsive image cards with client labels for agency readers, status, milestone progress and deadline. Existing search, pagination and management entry points are retained. The newest image authorized for the selected portal provides the cover, with gradient artwork when none is accessible. Cover choice is automatic. Project details share a media gallery, image upload control, downloads and an accessible native preview dialog. Revision galleries and approvals render images belonging to the exact authorized revision. The existing release confirmation and binding client decisions are preserved.
+
+### Files and contracts
+
+- Backend changes in `api/{briefs,projects,reviews}.py` and `services/{projects,reviews}.py` add authorized thumbnail/preview delivery, bounded cover lookup, optional project filtering for approvals and attachment MIME metadata. PNG thumbnails fit within 640 × 480. Preview and thumbnail reads verify stored hashes and reuse project, file and released-revision scope with private no-store responses. No migration was required.
+- Shared frontend components `media-card.tsx`, `project-media.tsx` and `project-media-upload.tsx` integrate with both project detail pages, the project list and the review queue. Existing file upload and download contracts remain available. Direct same-origin image URLs bypass shared image optimization. The file identity, media type and modal are separated from project and review presentation so CP8-B can extend supported media rendering.
+- Updated PRD, API, frontend and testing specifications and ADR-036. Added PostgreSQL media tests, a synthetic PNG fixture and a Playwright gallery test.
+
+### Executed verification
+
+| Command or check | Actual result |
+|---|---|
+| `ruff check app tests`, strict `mypy` in the isolated backend test service | Passed |
+| `pytest -q --tb=line tests/test_media.py tests/test_briefs.py tests/test_projects.py tests/test_reviews.py` | 22 passed in 70.74 seconds. The initial cover lookup emitted a SQLAlchemy deprecation warning |
+| `pytest -q --tb=line tests/test_media.py tests/test_projects.py` after replacing that deprecated lookup with the supported PostgreSQL distinct_on extension | 9 passed in 48.27 seconds. One upstream TestClient warning |
+| `npm run lint`, `npm run typecheck`, `npm test` | Passed. Seven Vitest tests passed |
+| Isolated production frontend and backend Docker builds | Passed. The isolated API and web frontend reported healthy |
+| `PLAYWRIGHT_BASE_URL=http://localhost:3310 PLAYWRIGHT_CHANNEL=chrome npm run test:e2e -- media.spec.ts projects.spec.ts` | Two passed in 1.5 minutes. Covered image upload, agency/client cards, preview focus and Escape, release cancellation, released images, replacement draft isolation, project management and notifications |
+| Targeted media capture pass with image decode waits | One passed in 25.9 seconds. Five screenshots captured and visually reviewed |
+
+Final `scripts/smoke.py`, `alembic check`, specification checks, `git diff --check` and the existing secret scanner passed. All five isolated Compose services were healthy. The scanner covered 359 Git blobs and 264 working paths. PNG validation and OCR credential checks passed for all five screenshots and the synthetic image fixture.
+
+The first backend test attempt overlapped a database-container recreation and failed during connection setup. It was rerun against the healthy database. The first gallery browser attempt read the new draft before its create response arrived. Explicit response waits fixed the test harness. Final browser checks used the deployed gallery implementation.
+
+Authorization tests cover anonymous readers, unassigned staff, other clients, other projects, archived files, revoked membership and non-image previews. An internal revision image stays inaccessible until release. A later draft leaves the released revision visible without exposing replacement content. Both image endpoints set private no-store, Vary Cookie, nosniff and inline disposition. No live AI request was made.
+
+### Reviewed screenshots
+
+| View | Capture |
+|---|---|
+| Agency project gallery and filters | [Agency project cards](screenshots/cp8/agency-project-gallery.png) |
+| Client project gallery | [Client project cards](screenshots/cp8/client-project-gallery.png) |
+| Enlarged project image | [Client image preview](screenshots/cp8/client-image-preview.png) |
+| Exact released revision | [Released revision preview](screenshots/cp8/released-revision-preview.png) |
+| Responsive project assets | [375px client gallery](screenshots/cp8/client-mobile-gallery.png) |
+
+### Limits and next checkpoint
+
+Covers derive from the newest accessible image and have no manual pinning. Thumbnails are generated on demand and use no shared cache. The gallery pages existing project files in groups of 50, and the released revision history uses the existing review listing. File support remains validated PNG, JPEG and the existing text downloads. Video playback and processing remain deferred to CP8-B. CP8-A stops for explicit owner review.
+
 ## CP7 Controlled Groq verification
 
 **Controlled live copywriting generation verified on 21 November 2026.** The resumed CP7 run used Groq through the existing compatible adapter with `User-Agent: CreativeOS/1.0`, `openai/gpt-oss-20b`, 4096 output tokens and a 30-second timeout. The raw report-output debug print introduced during manual troubleshooting was removed. Schema and validator behavior were preserved.

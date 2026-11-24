@@ -9,7 +9,7 @@ from fastapi import HTTPException
 from sqlalchemy import Select, select, text
 from sqlalchemy.orm import Session
 
-from app.ai.contracts import PROMPT_VERSION, TEMPERATURES
+from app.ai.contracts import REPORT_PROMPT_VERSION, TEMPERATURES
 from app.ai.reporting import instructions
 from app.ai_models import Generation
 from app.config import settings
@@ -159,7 +159,7 @@ def generate(
             },
             provider=cfg.ai_provider,
             model=cfg.ai_model,
-            prompt_version=PROMPT_VERSION,
+            prompt_version=REPORT_PROMPT_VERSION,
         )
     )
     if actor:

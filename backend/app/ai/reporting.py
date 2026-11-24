@@ -5,7 +5,7 @@ from typing import Any
 from pydantic import Field
 
 from app.ai.contracts import (
-    PROMPT_VERSION,
+    REPORT_PROMPT_VERSION,
     TEMPERATURES,
     GenerationFailure,
     Structured,
@@ -26,7 +26,7 @@ class VerifiedMetrics(Structured):
 
 def summarize(metrics: VerifiedMetrics) -> Summary:
     config = settings()
-    response = adapter(config.ai_provider, PROMPT_VERSION).generate(
+    response = adapter(config.ai_provider, REPORT_PROMPT_VERSION).generate(
         "report_summary",
         config.ai_model,
         metrics.model_dump(),

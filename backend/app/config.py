@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     ai_max_output_tokens: int = Field(2000, ge=128, le=8000)
     ai_timeout_seconds: int = Field(15, ge=1, le=30)
     file_provider: Literal["local", "google_drive"] = "local"
+    video_max_bytes: int = Field(50 * 1024 * 1024, ge=1024 * 1024, le=500 * 1024 * 1024)
     drive_access_token: SecretStr | None = None
     storage_dir: str = "/home/creative/uploads"
     dev_mail_dir: str = "/home/creative/.local/mail"

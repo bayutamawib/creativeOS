@@ -146,9 +146,71 @@ def test_human_gates_copy_and_idempotent_business_writes(browser, workspace):
         assert job.input_snapshot["direction"] == db.get_one(Proposal, UUID(direction)).payload
         assert (
             job.requested_by == workspace["manager"]
-            and job.prompt_version
+            and job.prompt_version == "creative-v2"
             and job.provider == "fixture"
+            and job.parameters["target_count"] == 2
         )
+        for key in copies:
+            copy = db.get_one(Generation, UUID(key))
+            assert copy.prompt_version == "creative-v2" and "target_count" not in copy.parameters
+
+
+def test_critical_claims_block_proposal_selection_and_copy_save(browser, workspace):
+    manager, owner = browser("manager"), browser("owner")
+    pid = workspace["north-1"]
+    path, snap = approved(owner, manager, pid)
+    for action in ("analyze", "generate-creative-direction"):
+        queued = request(manager, path, action).json()["data"]["generation_id"]
+        assert runner.execute_one()
+        assert poll(manager, queued)["status"] == "completed"
+    direction = next(
+        p for p in manager.get(path + "/proposals").json()["data"] if p["kind"] == "direction"
+    )["id"]
+    assert manager.post(B + "/proposals/" + direction + "/approve").status_code == 200
+    plan = request(manager, path, "generate-content-plan", {
+        "direction_proposal_id": direction, "snapshot_id": snap, "target_count": 2
+    }).json()["data"]["generation_id"]
+    class UnsupportedPlan:
+        def generate(self, kind, model, context, params):
+            output = json.loads(Fixture().generate(kind, model, context, params).content)
+            output["content_plan"][0]["draft_caption"] = "Fresh apples, pears, and berries for your kitchen."
+            return Response(json.dumps(output))
+
+    assert runner.execute_one(UnsupportedPlan())
+    items = [p for p in manager.get(path + "/proposals").json()["data"] if p["kind"] == "plan_item"]
+    bad, safe = items
+    assert manager.post(B + "/proposals/" + bad["id"] + "/approve").status_code == 409
+    with Session(engine()) as db:
+        assert db.get_one(Proposal, UUID(bad["id"])).decision == "pending"
+        assert db.scalar(select(func.count()).select_from(Task)) == 0
+        quality = db.get_one(Generation, UUID(plan)).quality_findings
+        assert quality is not None and quality["disposition"] == "critical"
+    assert manager.post(B + "/proposals/" + safe["id"] + "/approve").status_code == 200
+    draft = manager.post(f"{B}/projects/{pid}/content-items", json={"proposal_id": safe["id"]}).json()["data"]
+    key = request(manager, B + "/content-items/" + draft["id"], "generate").json()["data"]["generation_id"]
+
+    class UnsupportedCopy:
+        def generate(self, *args):
+            return Response(json.dumps({
+                "headline": "Autumn fruit box", "caption": "Seasonal variety for home cooks.",
+                "call_to_action": "Tap the link in bio to join the waitlist.",
+                "hashtags": ["#FarmFresh"], "revision_notes": ["Maintained restricted language."],
+                "potential_risks": [],
+            }))
+
+    assert runner.execute_one(UnsupportedCopy())
+    job = poll(manager, key)
+    assert job["status"] == "completed" and job["quality_findings"]["disposition"] == "critical"
+    assert {f["code"] for f in job["quality_findings"]["findings"]} >= {
+        "unconfirmed_freshness", "unconfirmed_signup_destination"
+    }
+    content_path = B + "/content-items/" + draft["id"]
+    assert manager.post(content_path + "/revisions", json={"generation_id": key}).status_code == 409
+    assert owner.get(content_path).status_code == 403
+    with Session(engine()) as db:
+        item = db.get_one(ContentItem, UUID(draft["id"]))
+        assert item.status == "draft" and item.current_revision_id == UUID(draft["current_revision_id"])
+        assert db.scalar(select(func.count()).select_from(ContentRevision)) == 1
 
 
 class BadProvider:

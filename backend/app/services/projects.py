@@ -4,9 +4,18 @@ from uuid import UUID
 
 from fastapi import HTTPException
 from sqlalchemy import Select, func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.dialects.postgresql import distinct_on
+from sqlalchemy.orm import Session, aliased
 
-from app.models import Audit, Client, ClientMembership, Project, User
+from app.brief_models import FileAsset
+from app.models import (
+    Audit,
+    Client,
+    ClientMembership,
+    OperationsSettings,
+    Project,
+    User,
+)
 from app.project_inputs import (
     MemberInput,
     MilestoneCreate,
@@ -15,10 +24,26 @@ from app.project_inputs import (
     ProjectCreate,
     ProjectUpdate,
 )
-from app.project_models import Milestone, ProjectMember
+from app.project_models import Milestone, ProjectMember, Task, TaskAssignee
 from app.schemas import Input
 from app.security import now
 from app.services import agency
+
+CLIENT_ACTIVITY_ACTIONS = {
+    "project.created",
+    "project.updated",
+    "content.approve-and-release",
+    "content.client-approval",
+    "content.request-revision",
+}
+TEAM_ACTIVITY_ACTIONS = {
+    "project.created",
+    "project.updated",
+    "project_member.assigned",
+    "project_member.removed",
+    "milestone.created",
+    "milestone.updated",
+}
 
 
 def effective_portal(db: Session, actor: UUID, portal: Portal | None) -> Portal:
@@ -75,6 +100,163 @@ def change_log(
     )
 
 
+def _activity_description(
+    action: str,
+    details: dict[str, Any],
+    task_name: str | None,
+    milestone_name: str | None,
+    person_name: str | None,
+) -> str:
+    if action == "project.created":
+        return "Created the project"
+    if action == "project.updated":
+        return "Updated the project"
+    if action == "project.archived":
+        return "Archived the project"
+    if action == "project_member.assigned":
+        return f"Added {person_name or 'a team member'} to the project"
+    if action == "project_member.removed":
+        return f"Removed {person_name or 'a team member'} from the project"
+    if action == "milestone.created":
+        return f"Created milestone “{milestone_name or 'Unavailable milestone'}”"
+    if action == "milestone.updated":
+        return f"Updated milestone “{milestone_name or 'Unavailable milestone'}”"
+    if action == "task.created":
+        return f"Created task “{task_name or 'Unavailable task'}”"
+    if action == "task.assigned":
+        return f"Assigned {person_name or 'a team member'} to “{task_name or 'Unavailable task'}”"
+    if action == "task.unassigned":
+        return f"Unassigned {person_name or 'a team member'} from “{task_name or 'Unavailable task'}”"
+    if action == "task.updated":
+        before, after = details.get("from"), details.get("to")
+        if before and after and before != after:
+            return (
+                f"Moved “{task_name or 'Unavailable task'}” from "
+                f"{str(before).replace('_', ' ')} to {str(after).replace('_', ' ')}"
+            )
+        return f"Updated task “{task_name or 'Unavailable task'}”"
+    if action == "task_template.applied":
+        return f"Applied a task template with {details.get('task_count', 0)} planned tasks"
+    labels = {
+        "content.submit-for-internal-review": "Submitted content for internal review",
+        "content.request-internal-changes": "Requested internal content changes",
+        "content.approve-and-release": "Approved and released content for client review",
+        "content.client-approval": "Approved released content",
+        "content.request-revision": "Requested a content revision",
+        "content.feedback": "Added content feedback",
+    }
+    return labels.get(action, action.replace(".", " · ").replace("_", " ").capitalize())
+
+
+def activity(
+    db: Session,
+    actor: UUID,
+    project_id: UUID,
+    portal: Portal,
+    page: int,
+    page_size: int,
+) -> dict[str, Any]:
+    project = access(db, actor, project_id, portal)
+    query = select(Audit).where(Audit.project_id == project.id)
+    roles = agency.roles(db, actor) if portal == "agency" else set()
+    if portal == "client":
+        visible_milestones = select(Milestone.id).where(
+            Milestone.project_id == project.id, Milestone.client_visible.is_(True)
+        )
+        query = query.where(
+            Audit.action.in_(CLIENT_ACTIVITY_ACTIONS)
+            | (
+                Audit.action.in_({"milestone.created", "milestone.updated"})
+                & Audit.target_id.in_(visible_milestones)
+            )
+        )
+    elif not roles & {"admin", "agency_manager"}:
+        assigned_tasks = (
+            select(Task.id)
+            .join(TaskAssignee, TaskAssignee.task_id == Task.id)
+            .where(Task.project_id == project.id, TaskAssignee.user_id == actor)
+        )
+        query = query.where(
+            Audit.action.in_(TEAM_ACTIVITY_ACTIONS)
+            | (Audit.action.like("task.%") & Audit.target_id.in_(assigned_tasks))
+        )
+    rows = db.scalars(
+        query.order_by(Audit.created_at.desc(), Audit.id.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size + 1)
+    ).all()
+    has_more = len(rows) > page_size
+    rows = rows[:page_size]
+    target_ids = {row.target_id for row in rows}
+    user_ids = {row.actor_id for row in rows if row.actor_id}
+    user_ids.update(
+        UUID(value)
+        for row in rows
+        if (value := row.details.get("user_id"))
+        and isinstance(value, str)
+        and _is_uuid(value)
+    )
+    users = dict(
+        db.execute(select(User.id, User.full_name).where(User.id.in_(user_ids))).all()
+    )
+    tasks = dict(
+        db.execute(select(Task.id, Task.title).where(Task.id.in_(target_ids))).all()
+    )
+    milestone_names = dict(
+        db.execute(select(Milestone.id, Milestone.name).where(Milestone.id.in_(target_ids))).all()
+    )
+    client_people = (
+        set(
+            db.scalars(
+                select(ClientMembership.user_id).where(
+                    ClientMembership.client_id == project.client_id,
+                    ClientMembership.is_active.is_(True),
+                )
+            )
+        )
+        if portal == "client"
+        else set()
+    )
+    timezone = db.get(OperationsSettings, 1)
+    items = []
+    for row in rows:
+        related_user = row.details.get("user_id")
+        related_name = users.get(UUID(related_user)) if _is_uuid(related_user) else None
+        if portal == "client":
+            actor_name = users.get(row.actor_id) if row.actor_id in client_people else "Creative team"
+        else:
+            actor_name = users.get(row.actor_id, "Former user") if row.actor_id else "System"
+        items.append(
+            {
+                "id": row.id,
+                "type": row.action,
+                "occurred_at": row.created_at,
+                "actor": actor_name,
+                "description": _activity_description(
+                    row.action,
+                    row.details,
+                    tasks.get(row.target_id),
+                    milestone_names.get(row.target_id),
+                    related_name or users.get(row.target_id),
+                ),
+            }
+        )
+    return {
+        "items": items,
+        "page": page,
+        "has_more": has_more,
+        "timezone": timezone.timezone if timezone else "Asia/Jakarta",
+    }
+
+
+def _is_uuid(value: Any) -> bool:
+    try:
+        UUID(str(value))
+        return True
+    except (TypeError, ValueError, AttributeError):
+        return False
+
+
 def project_view(project: Project, portal: Portal) -> dict[str, Any]:
     fields = ["id", "client_id", "name", "status", "start_date", "due_date", "service_type"]
     if portal == "agency":
@@ -82,7 +264,9 @@ def project_view(project: Project, portal: Portal) -> dict[str, Any]:
     return {key: getattr(project, key) for key in fields}
 
 
-def list_view(db: Session, rows: Sequence[Project], portal: Portal) -> list[dict[str, Any]]:
+def list_view(
+    db: Session, rows: Sequence[Project], portal: Portal, actor: UUID
+) -> list[dict[str, Any]]:
     if not rows:
         return []
     ids = [p.id for p in rows]
@@ -122,12 +306,49 @@ def list_view(db: Session, rows: Sequence[Project], portal: Portal) -> list[dict
             select(ordered.c.project_id, ordered.c.name).where(ordered.c.rank == 1)
         )
     }
+    # Reuse file scope so client cards include only shared or released media.
+    from app.services import assets
+
+    covering_video = aliased(FileAsset)
+    cover_rows = db.execute(
+        assets.visible(db, actor, portal)
+        .where(
+            FileAsset.project_id.in_(ids),
+            FileAsset.mime_type.in_(["image/png", "image/jpeg", "video/mp4"]),
+            ~FileAsset.id.in_(
+                select(covering_video.cover_file_id).where(
+                    covering_video.cover_file_id.is_not(None),
+                    covering_video.archived_at.is_(None),
+                )
+            ),
+        )
+        .order_by(FileAsset.project_id, FileAsset.created_at.desc(), FileAsset.id)
+        .ext(distinct_on(FileAsset.project_id))
+    ).scalars()
+    covers = {f.project_id: f for f in cover_rows}
+    client_names = (
+        dict(
+            db.execute(
+                select(Client.id, Client.company_name).where(
+                    Client.id.in_({r.client_id for r in rows})
+                )
+            ).all()
+        )
+        if portal == "agency"
+        else {}
+    )
     result = []
     for row in rows:
         total, done = counts.get(row.id, (0, 0))
         result.append(
             project_view(row, portal)
-            | {"progress": progress_counts(total, done), "next_milestone": upcoming.get(row.id)}
+            | {
+                "progress": progress_counts(total, done),
+                "next_milestone": upcoming.get(row.id),
+                "cover_file_id": (covers[row.id].cover_file_id if covers[row.id].mime_type == "video/mp4" else covers[row.id].id) if row.id in covers else None,
+                "cover_video_id": covers[row.id].id if row.id in covers and covers[row.id].mime_type == "video/mp4" else None,
+                **({"client_name": client_names.get(row.client_id)} if portal == "agency" else {}),
+            }
         )
     return result
 

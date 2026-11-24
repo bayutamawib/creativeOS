@@ -25,6 +25,10 @@ CP0 review, 20 November 2026. These decisions specify future behavior. The origi
 
 The owner authorized both policies at CP0 review. API §§4.3, 4.6–4.7 and 5.8 define the service contract. Database §§4.1 and 4.4 define persistence and concurrency. Frontend §9 maps actions to controls. Testing §16.2 defines the positive, negative and concurrent acceptance cases.
 
+## CP8-B video decision
+
+- **ADR-037 · Local MP4 delivery.** Keep video in the existing private local file volume and file authorization model. `VIDEO_MAX_BYTES` defaults to 50 MiB and is bounded to 1–500 MiB. Stream uploads into private temporary files, validate complete top-level MP4 boxes and hash the bytes before an atomic rename. A manual cover is optional; a same-project, same-visibility PNG/JPEG cover is frozen when the video joins a revision. Project cards select the newest authorized media, with a play indicator and designed fallback when a video has no cover. Backend-mediated streaming verifies the stored hash with bounded reads and reauthorizes every full or Range request. The same exact revision release and client decision govern video attachments. The optional Drive file provider does not accept video in this checkpoint. There is no transcoder, codec probe, or timestamp comment system.
+
 ## CP1 foundation decisions
 
 - **ADR-012 · Local service isolation.** Publish the web, API and n8n interfaces on loopback. PostgreSQL is reachable only on the Compose network. Bootstrap a dedicated database owned by the non-superuser creative_app role. The API and worker receive that role’s credential. n8n uses its own persisted editor metadata and receives no application database credential.
@@ -71,3 +75,5 @@ The owner authorized both policies at CP0 review. API §§4.3, 4.6–4.7 and 5.8
 - **ADR-034 · Portfolio evidence and provider verification.** Use the isolated, synthetic Compose stack for screenshots and separate the gallery from the single-project browser evidence. Keep credentials, invitation links and raw webhook headers and payloads out of the gallery. Run future live LLM checks only through the documented one-off process, with synthetic data, an approved provider and a bounded request. Keep the demo worker on the fixture.
 
 - **ADR-035 · Controlled Groq verification.** Reuse the HTTPS compatible adapter with the CreativeOS/1.0 User-Agent. CP7 permits one synthetic copywriting request at 4096 tokens and 30 seconds using the durable runner, with the continuous consumers stopped. Persist provider and token provenance, validate the existing schema, retain human release gates and restore fixture mode. Raw generated content is excluded from diagnostic logs.
+
+- **ADR-036 · Authorized media views.** CP8-A reuses the existing project/file visibility query and exact released-revision history. Project covers derive from the newest image accessible to the current portal. This avoids a new cover-selection column or migration. Thumbnails decode hash-verified bytes and scale within 640 × 480. Preview and thumbnail endpoints apply the existing active membership and project checks on every request with private no-store delivery. Shared cards and native image dialogs bypass Next.js image optimization. Project image uploads retain explicit visibility and existing validation. PNG and JPEG are supported in this checkpoint.

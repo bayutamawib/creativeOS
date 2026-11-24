@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.ai.contracts import GenerationFailure, validate
 from app.ai.providers import Provider, adapter
+from app.ai.quality import assess
 from app.ai.reporting import validate_summary
 from app.ai_models import ContentItem, ContentRevision, Generation, Proposal
 from app.brief_models import Snapshot
@@ -132,6 +133,10 @@ def execute_one(provider: Provider | None = None) -> bool:
         else:
             assert result is not None and output is not None
             row.status, row.output, row.completed_at = "completed", output, now()
+            if row.snapshot_id is not None:
+                row.quality_findings = assess(
+                    row.generation_type, output, db.get_one(Snapshot, row.snapshot_id).fields
+                )
             row.claim_token = row.claim_expires_at = None
             row.error_code = None
             row.input_tokens, row.output_tokens = result.input_tokens, result.output_tokens

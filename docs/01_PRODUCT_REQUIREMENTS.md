@@ -228,3 +228,8 @@ The MVP is considered complete when:
 - Advanced employee payroll and HR management.
 - Production-grade multi-tenant SaaS billing.
 - Mechanistic interpretability as a required runtime feature.
+## CP8-A Project and creative media gallery
+
+Agency and client users can browse responsive project cards with an authorized image, status, progress and deadline. Agency cards include client identification. An image-free project has a designed local fallback. Users can add validated project images through the existing upload rules.
+
+Project detail pages provide image galleries and enlarged, keyboard-accessible previews. Deliverable images show their title and revision number. A client sees only shared project images and images belonging to a revision released to that client. The review screen previews exactly the revision under review while retaining agency confirmation, feedback and client sign-off. CP8-A supports PNG and JPEG through authenticated APIs. Video support is deferred to CP8-B.

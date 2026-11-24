@@ -51,8 +51,10 @@ for action in (
 
 
 @router.get("/approvals")
-def queue(db: Database, identity: Identity, portal: Portal) -> dict[str, Any]:
-    return {"data": reviews.listing(db, identity.user_id, portal)}
+def queue(
+    db: Database, identity: Identity, portal: Portal, project_id: UUID | None = None
+) -> dict[str, Any]:
+    return {"data": reviews.listing(db, identity.user_id, portal, project_id)}
 
 
 class Comment(Input):

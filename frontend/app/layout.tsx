@@ -9,8 +9,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <header className="bg-white border-b border-border px-6 py-5 sm:px-12">
-          <div className="mx-auto max-w-6xl font-bold tracking-tight text-xl">
+        <header className="border-b border-border bg-white px-4 py-5 sm:px-6 lg:px-8">
+          <div className="text-xl font-bold tracking-tight">
             Creative <span className="text-primary">OS</span>
           </div>
         </header>

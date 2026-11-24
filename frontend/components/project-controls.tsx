@@ -1,5 +1,7 @@
 import { OperationForm } from "@/components/operation-form";
 import type { Project, Milestone, Person, Task } from "@/lib/projects";
+import { allowedTaskStatuses, TASK_STATUS_LABELS } from "@/lib/task-statuses";
+import { TaskRemovalButton } from "@/components/task-removal-button";
 export function Choices({
   name,
   label,
@@ -18,6 +20,21 @@ export function Choices({
         {values.map((s) => (
           <option key={s} value={s}>
             {s.replaceAll("_", " ")}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function TaskStatusChoices({ task, manager }: { task: Task; manager: boolean }) {
+  return (
+    <label>
+      Task status
+      <select name="status" defaultValue={task.status}>
+        {allowedTaskStatuses(task.status, manager).map((status) => (
+          <option key={status} value={status}>
+            {TASK_STATUS_LABELS[status]}
           </option>
         ))}
       </select>
@@ -205,36 +222,19 @@ export function TaskCard({
   manager: boolean;
 }) {
   const path = "/tasks/" + task.id;
+  const closed = task.status === "cancelled" || task.status === "completed";
   const available = members.filter(
     (p) => !task.assignee_ids.includes(p.user_id),
   );
-  const closed = ["cancelled", "completed"].includes(task.status);
-  const statuses = closed
-    ? manager
-      ? [task.status, "todo"]
-      : [task.status]
-    : [
-        "todo",
-        "in_progress",
-        "in_review",
-        "blocked",
-        "completed",
-        ...(manager ? ["cancelled"] : []),
-      ];
   return (
-    <article className="space-y-3 rounded-lg border border-border p-4">
+    <article id={"task-" + task.id} className="space-y-3 rounded-lg border border-border p-4">
       <h3>{task.title}</h3>
       <p>
         {task.status.replaceAll("_", " ")} · {task.due_date || "No deadline"}
       </p>
       <p>{task.description}</p>
       <OperationForm path={path} method="PATCH" label="Update task status">
-        <Choices
-          name="status"
-          label="Task status"
-          values={statuses}
-          value={task.status}
-        />
+        <TaskStatusChoices task={task} manager={manager} />
       </OperationForm>
       {manager && (
         <>
@@ -270,6 +270,9 @@ export function TaskCard({
                 </select>
               </label>
             </OperationForm>
+          )}
+          {!closed && (
+            <TaskRemovalButton id={task.id} title={task.title} updatedAt={task.updated_at} />
           )}
         </>
       )}

@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from datetime import date, timedelta
 from typing import Any
 from uuid import UUID
 
@@ -8,10 +9,82 @@ from sqlalchemy.orm import Session
 
 from app.models import Project, User
 from app.operations_models import Outbox
-from app.project_inputs import TaskCreate, TaskUpdate
+from app.project_inputs import TaskCreate, TaskTemplateApply, TaskUpdate
 from app.project_models import Milestone, Task, TaskAssignee
 from app.security import now
 from app.services import agency, projects
+
+TASK_TEMPLATES: dict[str, dict[str, Any]] = {
+    "social_media_campaign": {
+        "name": "Social Media Campaign",
+        "description": "Standard planning and production sequence for a social campaign.",
+        "steps": [
+            ("Creative brief approval", "Confirm the approved campaign requirements.", 2),
+            ("Content planning", "Prepare the channel and content plan.", 4),
+            ("Design production", "Produce the planned campaign assets.", 7),
+            ("Internal review", "Review creative work before client release.", 9),
+            ("Client approval", "Collect the authorized client decision.", 11),
+            ("Campaign launch", "Release the approved campaign.", 14),
+        ],
+    }
+}
+
+
+def template_catalog() -> list[dict[str, Any]]:
+    return [
+        {
+            "key": key,
+            "name": template["name"],
+            "description": template["description"],
+            "steps": [
+                {"title": title, "description": description, "offset_days": offset}
+                for title, description, offset in template["steps"]
+            ],
+        }
+        for key, template in TASK_TEMPLATES.items()
+    ]
+
+
+def apply_template(
+    db: Session, actor: UUID, project_id: UUID, data: TaskTemplateApply
+) -> list[Task]:
+    agency.guard_operational_write(db)
+    agency.manager_roles(db, actor)
+    project = projects.access(db, actor, project_id, write=True)
+    template = TASK_TEMPLATES[data.template]
+    titles = [step[0] for step in template["steps"]]
+    duplicate = db.scalar(
+        select(Task.id).where(
+            Task.project_id == project.id,
+            Task.status != "cancelled",
+            Task.title.in_(titles),
+        ).limit(1)
+    )
+    if duplicate:
+        raise HTTPException(409, "This template overlaps existing planned tasks")
+    created = [
+        create(
+            db,
+            actor,
+            project.id,
+            TaskCreate(
+                title=title,
+                description=description,
+                start_date=data.planning_start,
+                due_date=data.planning_start + timedelta(days=offset),
+            ),
+        )
+        for title, description, offset in template["steps"]
+    ]
+    projects.change_log(
+        db,
+        actor,
+        project,
+        "task_template.applied",
+        project.id,
+        {"template": data.template, "task_count": len(created)},
+    )
+    return created
 
 
 def task_scope(db: Session, actor: UUID) -> Select[Task]:
@@ -44,9 +117,13 @@ def view(db: Session, row: Task) -> dict[str, Any]:
     return views(db, [row])[0]
 
 
-def views(db: Session, rows: Sequence[Task]) -> list[dict[str, Any]]:
+def views(db: Session, rows: Sequence[Task], *, today: date | None = None) -> list[dict[str, Any]]:
     if not rows:
         return []
+    if today is None:
+        from app.services.reminders import day
+
+        today = day(now())
     assignees: dict[UUID, list[tuple[UUID, str]]] = {}
     for tid, uid, name in db.execute(
         select(TaskAssignee.task_id, User.id, User.full_name)
@@ -76,12 +153,19 @@ def views(db: Session, rows: Sequence[Task]) -> list[dict[str, Any]]:
                 "start_date",
                 "due_date",
                 "completed_at",
+                "updated_at",
             )
         }
         people = assignees.get(row.id, [])
         result["assignee_ids"] = [uid for uid, _ in people]
         result["assignee_names"] = [name for _, name in people]
         result["project_name"] = project_names[row.project_id]
+        result["is_overdue"] = bool(
+            today
+            and row.due_date
+            and row.due_date < today
+            and row.status not in {"completed", "cancelled"}
+        )
         results.append(result)
     return results
 
@@ -99,6 +183,7 @@ def create(db: Session, actor: UUID, project_id: UUID, data: TaskCreate) -> Task
     agency.manager_roles(db, actor)
     project = projects.access(db, actor, project_id, write=True)
     values = projects.changes(data, {"title", "priority", "status"})
+    values.pop("expected_updated_at", None)
     projects.validate_dates(values)
     validate_milestone(db, project_id, values)
     if values.get("status", "todo") != "todo":
@@ -113,6 +198,9 @@ def create(db: Session, actor: UUID, project_id: UUID, data: TaskCreate) -> Task
 def update(db: Session, actor: UUID, task_id: UUID, data: TaskUpdate) -> Task:
     row = get(db, actor, task_id, write=True)
     values = projects.changes(data, {"title", "priority", "status"})
+    expected = values.pop("expected_updated_at", None)
+    if expected and row.updated_at != expected:
+        raise HTTPException(409, "Task changed since it was loaded")
     manager = bool(agency.roles(db, actor) & {"admin", "agency_manager"})
     if not manager and values.keys() - {"status"}:
         raise HTTPException(403, "Assigned staff may update task status")

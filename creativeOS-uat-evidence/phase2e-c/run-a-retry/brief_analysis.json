@@ -1,0 +1,85 @@
+{
+  "stage": "brief_analysis",
+  "model": "openai/gpt-oss-20b",
+  "prompt_version": "creative-v2",
+  "evaluation_status": "evaluated",
+  "evaluated": true,
+  "raw_output": "{\"objective_summary\":\"Create three distinct content items—a carousel, a caption, and a website section—that invite home cooks in Alder Vale to join a waitlist for Morrow Orchard’s autumn fruit box, emphasizing seasonal variety and simple recipe inspiration without implying purchase or delivery.\",\"target_audience\":{\"description\":\"Home cooks in the fictional Alder Vale service area who enjoy using seasonal fruit in everyday recipes.\",\"primary_needs\":[\"Use seasonal fruit in everyday recipes\",\"Seek simple recipe inspiration\",\"Desire to stay informed about seasonal offerings\"]},\"key_themes\":[\"Seasonal variety of autumn fruit\",\"Simple recipe inspiration\",\"Warm, observant tone\",\"Waitlist engagement\"],\"content_pillars\":[\"Seasonal fruit variety\",\"Recipe inspiration\",\"Community engagement via waitlist\"],\"missing_information\":[\"Exact fruit varieties included in the autumn box\",\"Delivery date or schedule\",\"Pricing details\",\"Certifications or nutritional claims\",\"Testimonials or proof of quality\",\"Visual asset rights\"],\"potential_risks\":[\"Misleading audience about availability or delivery\",\"Confusion between waitlist and purchase\",\"Unintentional implication of guarantees or quality claims\"],\"creative_constraints\":[\"Do not claim or imply a price, discount, nutritional benefit, certification, delivery date, shipping coverage, customer testimonial, stock level, exact fruit varieties, or any other unknown fact.\",\"Do not invent proof, quotes, or guarantees.\",\"Use a waitlist call to action only.\",\"Keep language warm and observant.\",\"Do not state prices, nutrition, certifications, delivery dates, testimonials, or any unknown facts.\"]}",
+  "input_tokens": 1189,
+  "output_tokens": 918,
+  "output": {
+    "objective_summary": "Create three distinct content items—a carousel, a caption, and a website section—that invite home cooks in Alder Vale to join a waitlist for Morrow Orchard’s autumn fruit box, emphasizing seasonal variety and simple recipe inspiration without implying purchase or delivery.",
+    "target_audience": {
+      "description": "Home cooks in the fictional Alder Vale service area who enjoy using seasonal fruit in everyday recipes.",
+      "primary_needs": [
+        "Use seasonal fruit in everyday recipes",
+        "Seek simple recipe inspiration",
+        "Desire to stay informed about seasonal offerings"
+      ]
+    },
+    "key_themes": [
+      "Seasonal variety of autumn fruit",
+      "Simple recipe inspiration",
+      "Warm, observant tone",
+      "Waitlist engagement"
+    ],
+    "content_pillars": [
+      "Seasonal fruit variety",
+      "Recipe inspiration",
+      "Community engagement via waitlist"
+    ],
+    "missing_information": [
+      "Exact fruit varieties included in the autumn box",
+      "Delivery date or schedule",
+      "Pricing details",
+      "Certifications or nutritional claims",
+      "Testimonials or proof of quality",
+      "Visual asset rights"
+    ],
+    "potential_risks": [
+      "Misleading audience about availability or delivery",
+      "Confusion between waitlist and purchase",
+      "Unintentional implication of guarantees or quality claims"
+    ],
+    "creative_constraints": [
+      "Do not claim or imply a price, discount, nutritional benefit, certification, delivery date, shipping coverage, customer testimonial, stock level, exact fruit varieties, or any other unknown fact.",
+      "Do not invent proof, quotes, or guarantees.",
+      "Use a waitlist call to action only.",
+      "Keep language warm and observant.",
+      "Do not state prices, nutrition, certifications, delivery dates, testimonials, or any unknown facts."
+    ]
+  },
+  "validation_outcome": "passed",
+  "claim_check": {
+    "version": "claim-rules-v1",
+    "disposition": "clear",
+    "findings": [],
+    "scope": "known lexical claims only; human review remains required"
+  },
+  "editorial_assessment": {
+    "rubric": "five-dimension human assessment, 1-5",
+    "scores": {
+      "relevance": 5,
+      "specificity": 4,
+      "grounding": 4,
+      "distinctiveness": 3,
+      "actionability": 3
+    },
+    "baseline_scores": {
+      "relevance": 5,
+      "specificity": 3,
+      "grounding": 2,
+      "distinctiveness": 2,
+      "actionability": 3
+    },
+    "disposition": "owner_review_required",
+    "notes": [
+      "The unsupported freshness claim from the v1 baseline is absent, and the restrictions are carried forward clearly.",
+      "The missing-information list still prioritizes prohibited or intentionally unknown claims instead of the unconfirmed waitlist destination; visual asset rights is the useful actionable gap.",
+      "Warm, observant tone appears as a key theme, and community engagement remains a generic pillar rather than a distinct editorial theme.",
+      "Primary needs are stated as audience facts rather than explicitly labeled hypotheses, although they are largely traceable to the supplied audience and key message."
+    ]
+  },
+  "provider": "groq",
+  "latency_ms": 1631
+}

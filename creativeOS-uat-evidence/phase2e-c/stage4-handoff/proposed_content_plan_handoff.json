@@ -1,0 +1,68 @@
+{
+  "artifact_type": "human_reviewed_stage3_handoff_proposal",
+  "artifact_version": "1.0",
+  "human_review_status": "pending_owner_approval",
+  "downstream_execution_authorized": false,
+  "model_generated": false,
+  "source_stage3_editorial_acceptance": "failed",
+  "source_stage3_evidence": "creativeOS-uat-evidence/phase2e-c/stage3-run-a/content_plan.json",
+  "source_stage3_sha256": "143df5b114ccb5cae99ec22ab9390ce2a5f5d3ef013f7b982c7b058ac97b0090",
+  "authoritative_brief_evidence": "creativeOS-uat-evidence/phase2c/brief_analysis.json",
+  "selected_plan_item_index": 0,
+  "selection_reason": "Use the first carousel item to preserve the Phase 2C Stage 4 comparison position; owner approval remains required.",
+  "preserved_brief_restrictions": "Do not claim or imply a price, discount, nutritional benefit, certification, delivery date, shipping coverage, customer testimonial, stock level, exact fruit varieties, or any other unknown fact. Do not invent proof, quotes, or guarantees. Use a waitlist call to action only.",
+  "proposed_output": {
+    "content_plan": [
+      {
+        "title": "Seasonal Storyline Carousel",
+        "content_pillar": "Seasonal Variety & Recipe Inspiration",
+        "channel": "Instagram",
+        "content_format": "Carousel Post",
+        "objective": "Invite home cooks in Alder Vale to join the waitlist for the autumn fruit box by showcasing seasonal variety and recipe inspiration.",
+        "key_message": "An autumn fruit box brings seasonal variety and simple recipe inspiration to the kitchen. Interested home cooks can join the waitlist to hear more.",
+        "draft_caption": "Explore the colors of autumn in your kitchen. From crisp fruit close‑ups to recipe ideas, discover how seasonal variety can spark everyday cooking. Join the waitlist to learn more.",
+        "visual_direction": "Proposed assets: an assorted seasonal-fruit close-up, a gentle packing-scene concept with a basket and handwritten recipe card, a generic fruit-dish illustration, and a neutral 'Join the Waitlist' graphic. Asset availability and usage rights require confirmation before production.",
+        "call_to_action": "Join the Waitlist",
+        "suggested_day_offset": 0
+      },
+      {
+        "title": "Warm Invitation Caption",
+        "content_pillar": "Seasonal Variety & Recipe Inspiration",
+        "channel": "Instagram",
+        "content_format": "Caption",
+        "objective": "Encourage interest in the autumn fruit box by highlighting seasonal variety and recipe inspiration, prompting waitlist sign‑ups.",
+        "key_message": "Seasonal variety and simple recipe inspiration can bring new ideas to everyday cooking. Interested home cooks can join the waitlist to hear more.",
+        "draft_caption": "Seasonal variety can inspire your next dish. Think seasonal fruit, simple recipes, and a touch of seasonal charm. Want to learn more? Join the waitlist.",
+        "visual_direction": "Proposed asset: one general seasonal-fruit close-up or recipe-card image with no specific fruit or dish named. Asset availability and usage rights require confirmation before production.",
+        "call_to_action": "Join the Waitlist",
+        "suggested_day_offset": 0
+      },
+      {
+        "title": "Kitchen Companion Waitlist Section",
+        "content_pillar": "Seasonal Variety & Recipe Inspiration",
+        "channel": "Website",
+        "content_format": "Website Section",
+        "objective": "Provide clear information about the autumn fruit box concept and invite Alder Vale home cooks to join the waitlist for updates.",
+        "key_message": "An autumn fruit box brings seasonal variety and simple recipe inspiration to the kitchen. Interested home cooks can join the waitlist to hear more.",
+        "draft_caption": "Discover how a seasonal fruit box can add variety and spark new recipe ideas in your kitchen. Join our waitlist to stay informed about upcoming autumn offerings.",
+        "visual_direction": "Proposed assets: general packing-scene or recipe-card imagery with no specific fruit or dish shown, plus a neutral 'Join the Waitlist' graphic. Asset availability and usage rights require confirmation; no functional form or URL is assumed.",
+        "call_to_action": "Join the Waitlist",
+        "suggested_day_offset": 0
+      }
+    ]
+  },
+  "exact_changes": [
+    {
+      "field": "content_plan[1].draft_caption",
+      "from": "Autumn’s bounty is ready to inspire your next dish. Think fresh fruit, simple recipes, and a touch of seasonal charm.",
+      "to": "Seasonal variety can inspire your next dish. Think seasonal fruit, simple recipes, and a touch of seasonal charm.",
+      "reason": "Remove the unsupported freshness claim and availability-like wording."
+    },
+    {
+      "field": "content_plan[*].visual_direction",
+      "from": "Visual directions without consistent proposal and rights qualifiers",
+      "to": "Proposed asset language with availability and usage-rights confirmation",
+      "reason": "Restore the approved human handoff constraint without changing the planned formats."
+    }
+  ]
+}

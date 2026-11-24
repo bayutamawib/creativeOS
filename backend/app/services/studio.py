@@ -10,6 +10,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from app.ai.contracts import PROMPT_VERSION, TEMPERATURES
+from app.ai.quality import assess
 from app.ai_models import ContentItem, ContentRevision, Generation, Proposal
 from app.brief_inputs import Channel, Paragraph
 from app.brief_models import Brief, Snapshot
@@ -84,13 +85,14 @@ def enqueue(
         raise HTTPException(409, "Approved snapshot is stale")
     context = {"brief": snap.fields, "brand": snap.brand, "attachments": snap.attachments}
     params: dict[str, Any] = {
-        "target_count": options.target_count or snap.fields["requested_item_count"],
         "channels": options.channels or snap.fields["preferred_channels"] or ["Website"],
         "feedback": options.feedback,
         "include": options.include,
         "temperature": TEMPERATURES[kind],
         "max_output_tokens": settings().ai_max_output_tokens,
     }
+    if kind == "content_plan":
+        params["target_count"] = options.target_count or snap.fields["requested_item_count"]
     if kind != "content_plan" and (
         options.direction_proposal_id or options.target_count or options.channels or options.include
     ):
@@ -236,6 +238,7 @@ def job_view(job: Generation) -> dict[str, Any]:
             "direction_id",
             "revision_id",
             "parameters",
+            "quality_findings",
             "created_at",
         )
     }
@@ -280,6 +283,11 @@ def decide(db: Session, actor: UUID, key: UUID, decision: str) -> Proposal:
         return prop
     if prop.decision != "pending":
         raise HTTPException(409, "Proposal already decided")
+    if decision == "approved":
+        kind = "creative_strategy" if prop.kind == "direction" else "content_plan"
+        output_key = "creative_directions" if prop.kind == "direction" else "content_plan"
+        if assess(kind, {output_key: [prop.payload]}, snap.fields)["disposition"] == "critical":
+            raise HTTPException(409, "Proposal has a critical unsupported claim")
     if decision == "approved" and prop.kind == "direction":
         selected = db.scalar(
             select(Proposal.id)
@@ -343,6 +351,8 @@ def draft(db: Session, actor: UUID, pid: UUID, proposal_id: UUID) -> ContentItem
         raise HTTPException(404, "Plan item unavailable")
     if prop.decision != "approved" or not current(db, snap):
         raise HTTPException(409, "Select a current approved plan item")
+    if assess("content_plan", {"content_plan": [prop.payload]}, snap.fields)["disposition"] == "critical":
+        raise HTTPException(409, "Plan item has a critical unsupported claim")
     old = db.scalar(select(ContentItem).where(ContentItem.source_proposal_id == prop.id))
     if old:
         return old
@@ -404,6 +414,8 @@ def save_copy(db: Session, actor: UUID, key: UUID, generation_id: UUID) -> Conte
         db, db.get_one(Snapshot, job.snapshot_id)
     ):
         raise HTTPException(409, "The suggestion uses stale inputs")
+    if assess("copywriting", job.output, db.get_one(Snapshot, job.snapshot_id).fields)["disposition"] == "critical":
+        raise HTTPException(409, "Suggestion has a critical unsupported claim")
     rev = ContentRevision(
         content_item_id=key,
         revision_number=parent.revision_number + 1,

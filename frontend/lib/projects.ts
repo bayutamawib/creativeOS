@@ -1,6 +1,11 @@
+import type { TaskStatus } from "@/lib/task-statuses";
+
 export type Project = {
   id: string;
   client_id: string;
+  cover_file_id?: string | null;
+  cover_video_id?: string | null;
+  client_name?: string;
   name: string;
   status: string;
   priority?: string;
@@ -16,6 +21,7 @@ export type Milestone = {
   name: string;
   status: string;
   due_date: string | null;
+  description?: string | null;
   client_visible?: boolean;
 };
 export type Task = {
@@ -23,7 +29,7 @@ export type Task = {
   project_id: string;
   title: string;
   description: string | null;
-  status: string;
+  status: TaskStatus;
   due_date: string | null;
   start_date: string | null;
   milestone_id: string | null;
@@ -31,6 +37,8 @@ export type Task = {
   project_name: string;
   assignee_names: string[];
   assignee_ids: string[];
+  updated_at: string;
+  is_overdue: boolean;
 };
 export type Person = { user_id: string; full_name: string };
 export type Progress = {

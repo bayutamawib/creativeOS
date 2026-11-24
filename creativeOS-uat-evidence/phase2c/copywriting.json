@@ -1,0 +1,151 @@
+{
+  "generation_id": "5b165627-f79d-4ea8-9738-0845b8b8b852",
+  "project_id": "ec892082-9144-4124-bb02-1558c6e0cafb",
+  "brief_id": "4f196446-b330-413e-96d9-935a7616ad4a",
+  "snapshot_id": "82e27503-aec7-4b2b-b372-262bf5f99674",
+  "selected_plan_item_id": "98e79f74-e2d5-40ad-8202-4399eb48a174",
+  "content_item_id": "24b076d3-fce8-4aca-b98a-a037312af3b4",
+  "input_revision_id": "28fbe2fc-bc61-49bb-af7b-fd185d08e2d0",
+  "content_item_status": "draft",
+  "stage": "copywriting",
+  "status": "completed",
+  "attempt": 1,
+  "provider": "compatible",
+  "model": "openai/gpt-oss-20b",
+  "prompt_version": "creative-v1",
+  "schema_name": "Copy",
+  "schema_version": "creative-v1 (shared contract; no separate schema version field)",
+  "validation_outcome": "passed_persisted_and_revalidated",
+  "input_tokens": 1515,
+  "output_tokens": 950,
+  "latency_ms": 1730,
+  "error_code": null,
+  "input_redacted": {
+    "brand": {
+      "industry": "Fictional seasonal produce",
+      "brand_name": "Morrow Orchard",
+      "guidelines": {
+        "guidance": "Fictional brand. Use only supplied brief facts. Keep language warm and observant. Do not state prices, nutrition, certifications, delivery dates, testimonials, or any unknown facts."
+      },
+      "company_name": "Morrow Orchard"
+    },
+    "brief": {
+      "title": "Morrow Orchard autumn fruit box waitlist",
+      "objective": "Create three content items that invite home cooks in the fictional Alder Vale service area to join a fictional waitlist for Morrow Orchard’s autumn fruit box. The goal is waitlist interest; no purchase or delivery is promised.",
+      "references": [],
+      "key_message": "An autumn fruit box brings seasonal variety and simple recipe inspiration to the kitchen. Interested home cooks can join the fictional waitlist to hear more.",
+      "content_type": "Three distinct content items: an Instagram carousel, an Instagram caption, and a Website waitlist section",
+      "restrictions": "Do not claim or imply a price, discount, nutritional benefit, certification, delivery date, shipping coverage, customer testimonial, stock level, exact fruit varieties, or any other unknown fact. Do not invent proof, quotes, or guarantees. Use a waitlist call to action only.",
+      "tone_of_voice": "Warm, observant, specific, and restrained",
+      "target_audience": "Home cooks in the fictional Alder Vale service area who enjoy using seasonal fruit in everyday recipes. Do not infer demographics, income, or dietary needs.",
+      "target_timeline": "Fictional autumn campaign; no publication or delivery date is confirmed",
+      "additional_context": "Morrow Orchard and Alder Vale are fictional. Available visual source categories for later human review: fruit close-ups, packing scenes, and recipe-card imagery. No actual media assets or rights are supplied. Keep each of the three items distinct and grounded in the stated brief. If a detail is unspecified, omit it or label it as an open question.",
+      "preferred_channels": [
+        "Instagram",
+        "Website"
+      ],
+      "requested_item_count": 3
+    },
+    "revision": {
+      "title": "Autumn Orchard Carousel: Harvest Moments",
+      "channel": "Instagram",
+      "objective": "Invite home cooks in Alder Vale to join the waitlist by showcasing seasonal fruit variety and simple recipe ideas.",
+      "key_message": "An autumn fruit box brings seasonal variety and simple recipe inspiration to the kitchen.",
+      "draft_caption": "Swipe through the colors of fall and discover quick, comforting recipes that bring the orchard to your kitchen. 🍂✨",
+      "call_to_action": "Tap the link in bio to join the waitlist.",
+      "content_format": "Carousel",
+      "content_pillar": "Seasonal Inspiration",
+      "visual_direction": "Close‑up shots of autumn fruit in natural light, interspersed with recipe‑card style graphics showing a single, easy recipe, all framed in a soft, earthy color palette.",
+      "suggested_day_offset": 0
+    },
+    "direction": {
+      "risks": [
+        "Misleading viewers about product availability or delivery dates",
+        "Unintentional implication of pricing or nutritional claims",
+        "Overpromising benefits not supported by brand guidelines",
+        "Potential confusion between fictional and real product offerings"
+      ],
+      "key_message": "An autumn fruit box brings seasonal variety and simple recipe inspiration to the kitchen.",
+      "concept_name": "Autumn Orchard Carousel: Harvest Moments",
+      "tone_of_voice": "Warm, observant, specific, and restrained",
+      "audience_insight": "Home cooks in Alder Vale enjoy seasonal fruit and look for fresh, approachable ideas to incorporate into everyday meals.",
+      "visual_direction": "Close‑up shots of autumn fruit in natural light, interspersed with recipe‑card style graphics showing a single, easy recipe, all framed in a soft, earthy color palette.",
+      "suggested_channels": [
+        "Instagram"
+      ],
+      "strategic_rationale": "An Instagram carousel that visually walks viewers through the seasonal variety of autumn fruit, pairing each image with a quick recipe idea to spark culinary curiosity and encourage waitlist sign‑ups."
+    },
+    "plan_item": {
+      "title": "Autumn Orchard Carousel: Harvest Moments",
+      "channel": "Instagram",
+      "objective": "Invite home cooks in Alder Vale to join the waitlist by showcasing seasonal fruit variety and simple recipe ideas.",
+      "key_message": "An autumn fruit box brings seasonal variety and simple recipe inspiration to the kitchen.",
+      "draft_caption": "Swipe through the colors of fall and discover quick, comforting recipes that bring the orchard to your kitchen. 🍂✨",
+      "call_to_action": "Tap the link in bio to join the waitlist.",
+      "content_format": "Carousel",
+      "content_pillar": "Seasonal Inspiration",
+      "visual_direction": "Close‑up shots of autumn fruit in natural light, interspersed with recipe‑card style graphics showing a single, easy recipe, all framed in a soft, earthy color palette.",
+      "suggested_day_offset": 0
+    },
+    "attachments": []
+  },
+  "parameters_redacted": {
+    "include": [],
+    "channels": [
+      "Instagram",
+      "Website"
+    ],
+    "feedback": null,
+    "temperature": 0.5,
+    "target_count": 3,
+    "max_output_tokens": 4096
+  },
+  "output_redacted": {
+    "caption": "Swipe through the colors of fall and discover quick, comforting recipes that bring the orchard to your kitchen. 🍂✨",
+    "hashtags": [
+      "#AutumnHarvest",
+      "#SeasonalFruit",
+      "#AlderVale",
+      "#MorrowOrchard",
+      "#HomeCooking",
+      "#FruitInspiration",
+      "#FallRecipes",
+      "#KitchenInspiration",
+      "#FarmFresh",
+      "#FruitBox",
+      "#Waitlist",
+      "#JoinTheWaitlist",
+      "#AutumnFlavors",
+      "#TasteOfFall"
+    ],
+    "headline": "Harvest Moments Await",
+    "call_to_action": "Tap the link in bio to join the waitlist.",
+    "revision_notes": [
+      "Updated headline to reflect warm, observant tone.",
+      "Maintained restricted language per brand guidelines.",
+      "Included call to action consistent with waitlist objective."
+    ],
+    "potential_risks": [
+      "Misleading viewers about product availability or delivery dates",
+      "Unintentional implication of pricing or nutritional claims",
+      "Overpromising benefits not supported by brand guidelines",
+      "Potential confusion between fictional and real product offerings"
+    ]
+  },
+  "pending_outbox_after_selection": 1,
+  "redaction_note": "Synthetic snapshot, selected plan item, draft revision, and generated output only; credentials, cookies, authorization headers, and transport logs excluded.",
+  "pending_outbox_before_selection": 1,
+  "direction_and_plan_selection_note": "Selections were authorized for synthetic baseline UAT only; no publication approval.",
+  "variants_note": "One structured copy suggestion was returned; the Copy schema has one headline, caption, and CTA, not a variants array.",
+  "scores": {
+    "relevance": 4,
+    "specificity": 2,
+    "grounding": 2,
+    "distinctiveness": 1,
+    "actionability": 2
+  },
+  "critical_failure": "Hashtag #FarmFresh asserts a product attribute not supplied by the approved brief. The CTA \"Tap the link in bio\" assumes an unconfirmed waitlist destination. The revision note claiming restricted language was maintained is unreliable in light of #FarmFresh.",
+  "requires_revision": true,
+  "review_notes": "Headline is new, but caption and CTA are verbatim copies of the selected plan item, so the assistant supplied little differentiation or revision. The output inherits the plan CTA assumption. #AutumnHarvest can imply a specific harvest provenance not established by the brief. No copy was saved as a new revision or approved for publication; item remains an internal draft.",
+  "preservation_note": "Sanitized synthetic UAT evidence. No credentials, raw authorization headers, cookies, environment values, or transport logs."
+}

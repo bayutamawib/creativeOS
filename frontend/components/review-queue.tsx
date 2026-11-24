@@ -1,10 +1,11 @@
 "use client";
+import { MediaCard, type MediaAsset } from "@/components/media-card";
 import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { mutate } from "@/lib/browser-api";
-type Asset = { id: string; name: string };
+type Asset = MediaAsset;
 type Revision = {
   files: Asset[];
   id: string;
@@ -132,20 +133,16 @@ export function ReviewQueue({
                     </div>
                   ))}
                 </dl>
-                {r.files.map((f) => (
-                  <p key={f.id}>
-                    <a
-                      href={
-                        "/api/v1/files/" +
-                        f.id +
-                        "/download?portal=" +
-                        (client ? "client" : "agency")
-                      }
-                    >
-                      {f.name}
-                    </a>
-                  </p>
-                ))}
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {r.files.map((f) => (
+                    <MediaCard
+                      key={f.id}
+                      asset={f}
+                      portal={client ? "client" : "agency"}
+                      caption={item.title + " · Revision " + r.number}
+                    />
+                  ))}
+                </div>
               </details>
             ))}
             {!client && (

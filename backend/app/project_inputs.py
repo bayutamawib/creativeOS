@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Annotated, Literal
 from uuid import UUID
@@ -59,6 +59,7 @@ class TaskUpdate(Input):
     milestone_id: UUID | None = None
     start_date: date | None = None
     due_date: date | None = None
+    expected_updated_at: datetime | None = None
 
 
 class TaskCreate(TaskUpdate):
@@ -67,3 +68,9 @@ class TaskCreate(TaskUpdate):
 
 class TaskAssignment(Input):
     user_id: UUID
+
+
+class TaskTemplateApply(Input):
+    template: Literal["social_media_campaign"]
+    planning_start: date
+    confirmed: Literal[True]

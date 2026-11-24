@@ -1024,3 +1024,13 @@ The final deliverable is a reproducible, working, secure MVP suitable for an AI 
 
 **CREATIVE OS must demonstrate real integration engineering, measurable AI behavior, and reliable business workflow automation.**
 CP4 release verification covers cancel and Escape without writes, exact title and version on confirmation, assigned staff submission and release denial, atomic rollback, concurrent submissions and separate client sign-off.
+
+## CP8-A gallery verification
+
+Verify image thumbnails and enlarged previews through real PostgreSQL-backed file authorization. Cover anonymous, unassigned staff, cross-client, other-project, archived-file, inactive-membership and non-image cases. Check private no-store responses and verify that project covers contain only accessible file IDs. Attach a private image to a draft revision, release it and create a replacement draft. The client gallery must retain the released revision and omit the unreleased replacement.
+
+Use Playwright on the fixture stack for uploaded images, agency/client project cards, image preview focus and Escape handling, release confirmation cancellation, successful release and client preview. Check desktop and 375px layouts and capture synthetic media screenshots. The PNG fixture is fictional editorial artwork. CP8-A has no live AI dependency.
+
+## CP8-B video verification
+
+Use PostgreSQL-backed API tests to reject disguised or incomplete MP4 files and enforce a configured size limit; check optional cover fallback, cover project/visibility scope, and immutability after revision attachment. Exercise full, partial, suffix, invalid and HEAD stream requests, including 200, 206 and 416 headers. Repeat range requests as anonymous, unassigned staff, foreign client, and owner before and after exact revision release. Confirm the cover is available only under the same release and that the owning client can make a binding video revision decision. Use an actual browser-decodable MP4 to verify project cards, play, seek, fullscreen control, and client approval in the project and review dialogs; structural test bytes alone do not establish browser playback. Verify the upload and delivery paths use bounded disk reads rather than whole-file byte arrays. No live AI call is required.

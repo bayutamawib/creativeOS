@@ -38,9 +38,11 @@ class FileAsset(ProjectRecord):
     category: Mapped[str]
     visibility: Mapped[str]
     archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    cover_file_id: Mapped[UUID | None]
     __table_args__ = (
         ownership(),
         UniqueConstraint("id", "project_id"),
+        ForeignKeyConstraint(["cover_file_id", "project_id"], ["file_assets.id", "file_assets.project_id"], name="fk_file_assets_cover_project"),
         CheckConstraint("visibility in ('internal','client_visible')"),
     )
 

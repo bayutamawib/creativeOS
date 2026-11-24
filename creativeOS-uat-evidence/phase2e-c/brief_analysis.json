@@ -1,0 +1,51 @@
+{
+  "stage": "brief_analysis",
+  "provider": "groq",
+  "model": "openai/gpt-oss-20b",
+  "prompt_version": "creative-v2",
+  "input": {
+    "brand": {
+      "industry": "Fictional seasonal produce",
+      "brand_name": "Morrow Orchard",
+      "guidelines": {
+        "guidance": "Fictional brand. Use only supplied brief facts. Keep language warm and observant. Do not state prices, nutrition, certifications, delivery dates, testimonials, or any unknown facts."
+      },
+      "company_name": "Morrow Orchard"
+    },
+    "brief": {
+      "title": "Morrow Orchard autumn fruit box waitlist",
+      "objective": "Create three content items that invite home cooks in the fictional Alder Vale service area to join a fictional waitlist for Morrow Orchard\u2019s autumn fruit box. The goal is waitlist interest; no purchase or delivery is promised.",
+      "references": [],
+      "key_message": "An autumn fruit box brings seasonal variety and simple recipe inspiration to the kitchen. Interested home cooks can join the fictional waitlist to hear more.",
+      "content_type": "Three distinct content items: an Instagram carousel, an Instagram caption, and a Website waitlist section",
+      "restrictions": "Do not claim or imply a price, discount, nutritional benefit, certification, delivery date, shipping coverage, customer testimonial, stock level, exact fruit varieties, or any other unknown fact. Do not invent proof, quotes, or guarantees. Use a waitlist call to action only.",
+      "tone_of_voice": "Warm, observant, specific, and restrained",
+      "target_audience": "Home cooks in the fictional Alder Vale service area who enjoy using seasonal fruit in everyday recipes. Do not infer demographics, income, or dietary needs.",
+      "target_timeline": "Fictional autumn campaign; no publication or delivery date is confirmed",
+      "additional_context": "Morrow Orchard and Alder Vale are fictional. Available visual source categories for later human review: fruit close-ups, packing scenes, and recipe-card imagery. No actual media assets or rights are supplied. Keep each of the three items distinct and grounded in the stated brief. If a detail is unspecified, omit it or label it as an open question.",
+      "preferred_channels": [
+        "Instagram",
+        "Website"
+      ],
+      "requested_item_count": 3
+    },
+    "attachments": []
+  },
+  "parameters": {
+    "include": [],
+    "channels": [
+      "Instagram",
+      "Website"
+    ],
+    "feedback": null,
+    "temperature": 0.2,
+    "max_output_tokens": 1200
+  },
+  "timestamp_utc": "2026-11-22T17:50:03.921357+00:00",
+  "input_tokens": 1189,
+  "output_tokens": 948,
+  "error_code": "local_capture_attribute_error",
+  "validation_outcome": "not_evaluated_due_to_local_capture_error",
+  "latency_ms": 1630,
+  "request_sent": true
+}

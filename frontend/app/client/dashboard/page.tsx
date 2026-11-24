@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { getApi, requirePortal } from "@/lib/server-api";
 import { Delegates, type Delegate } from "@/components/delegates";
+import {
+  ClientOperationsDashboard,
+  type ClientDashboardData,
+} from "@/components/operations-dashboard";
 type Project = { id: string; name: string };
 type Authority = {
   has_binding_authority: boolean;
@@ -19,6 +23,9 @@ export default async function Dashboard({
   const projects =
     (await getApi<Project[]>("/clients/" + member.client_id + "/projects")) ??
     [];
+  const operations = await getApi<ClientDashboardData>(
+    "/dashboard/client?client_id=" + encodeURIComponent(member.client_id),
+  );
   const project = projects.find((p) => p.id === query.project) ?? projects[0];
   const base = project && "/projects/" + project.id;
   const authority = base
@@ -39,6 +46,7 @@ export default async function Dashboard({
         </nav>
       )}
       <h2 className="text-2xl font-semibold">{member.company_name}</h2>
+      {operations && <ClientOperationsDashboard data={operations} />}
       <h3 className="text-lg font-medium">Projects</h3>
       {projects.length ? (
         <nav aria-label="Projects" className="flex flex-wrap gap-2">

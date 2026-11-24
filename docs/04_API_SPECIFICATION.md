@@ -1223,3 +1223,22 @@ Implementation requirements:
 If an endpoint or workflow must change, explain why and update this document.
 
 **Important:** The API contract describes intended business behavior. Minor implementation adjustments are acceptable when they preserve security, data integrity, and the expected user experience.
+## CP8-A authorized image delivery
+
+| Method | Route | Authorization and result |
+|---|---|---|
+| GET | `/files/{file_id}/thumbnail` | Existing active project/file read scope. Validated image scaled within 640 × 480 and encoded as PNG |
+| GET | `/files/{file_id}/preview` | Same scope. Original validated PNG or JPEG, inline |
+| GET | `/approvals?portal={portal}&project_id={project_id}` | Existing portal/project scope with optional project filtering. Revision attachments additionally include mime_type |
+
+Both media routes accept the existing portal parameter. Anonymous requests return 401, inaccessible or archived files return 404, and accessible non-images return 415. Delivery verifies the stored bytes against the recorded hash. Responses use private, no-store, Vary Cookie, nosniff and an inline disposition. The file list, metadata and download routes retain their existing access rules. A client can read an internal revision attachment only after a client-stage review releases that exact revision.
+
+Project listing adds cover_file_id for the newest accessible image or null. Agency listing adds client_name. Cover selection applies the file visibility query within the already authorized project set. Approval history adds mime_type for each attachment and continues to filter client histories to released revisions.
+
+## CP8-B video media
+
+`POST /files/upload` accepts `video/mp4` with a matching `.mp4` filename on local storage. `VIDEO_MAX_BYTES` defaults to 50 MiB and accepts 1–500 MiB. The server writes bounded request chunks to a private temporary file, checks complete top-level MP4 boxes including `ftyp`, `moov`, and `mdat`, hashes the file, and atomically stores it. PNG/JPEG and text retain their 5 MiB limit. Codec compatibility is determined by the browser; the API does not transcode.
+
+The cover is optional. `PUT /files/{video_id}/cover?portal={portal}` takes `{ "cover_file_id": "uuid" }` when one is supplied. Both assets must be accessible to the actor, in the same project and visibility scope, and the cover must be PNG/JPEG. Cover changes are rejected after the video is attached to any revision. The database enforces same-project references. Video metadata and revision attachments include nullable `cover_file_id`. Project lists add `cover_video_id` and use the newest authorized image or video for the cover; a video without a cover uses local fallback artwork.
+
+`GET` and `HEAD /files/{video_id}/stream?portal={portal}` reauthorize the file on every request. The route supports one RFC 7233 byte range, including open-ended and suffix forms; a valid range returns 206 with `Content-Range`, `Content-Length`, and `Accept-Ranges: bytes`. Invalid or unsatisfiable ranges return 416. Full reads return 200. The route verifies the stored hash with bounded reads before streaming chunks, without loading the video into process memory. The video download route also streams chunks. Responses set private no-store, Vary Cookie, nosniff, and inline disposition. Anonymous, foreign tenant, unassigned staff, archived, and unreleased requests follow the existing file access rules. An internal cover becomes visible to the owning client when its exact video revision is released. The existing client approval endpoint binds a decision to that released revision.

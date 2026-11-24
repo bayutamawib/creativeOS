@@ -1,0 +1,14 @@
+{
+  "record_type": "owner_approval",
+  "approval_status": "owner_approved",
+  "approval_scope": "stage4_copywriting_evaluation_only",
+  "approved_proposal_evidence": "creativeOS-uat-evidence/phase2e-c/stage4-handoff/proposed_content_plan_handoff.json",
+  "approved_proposal_sha256": "69f96a0a1bfab6ccf21ba5507989611103e89145d3772785be37a07a4b016104",
+  "source_stage3_evidence": "creativeOS-uat-evidence/phase2e-c/stage3-run-a/content_plan.json",
+  "source_stage3_sha256": "143df5b114ccb5cae99ec22ab9390ce2a5f5d3ef013f7b982c7b058ac97b0090",
+  "source_stage3_editorial_acceptance": "failed",
+  "stage3_model_performance_reclassified": false,
+  "selected_plan_item_index": 0,
+  "publication_authorized": false,
+  "recorded_date": "2026-11-23"
+}

@@ -1,0 +1,21 @@
+{
+  "backlog_id": "phase2e-stage2-grounding-and-distinctiveness",
+  "status": "open_research_backlog",
+  "source_run_c_evidence": "creativeOS-uat-evidence/phase2e-c/run-c/creative_strategy.json",
+  "source_run_c_sha256": "5499db92b32599719625d7e351db14efd8be8ce857a656016c329f368b781efa",
+  "observed_failures": [
+    "Unsupported exact fruit varieties and sensory attributes",
+    "Audience assumptions presented as facts instead of hypotheses",
+    "Directions differentiated mainly by format rather than narrative concept",
+    "Stage 3 reintroduced an unsupported freshness claim after receiving a human-reviewed grounded strategy",
+    "Stage 3 dropped proposed-asset and rights-confirmation qualifiers from some visual directions",
+    "Stage 4 repeated the selected caption and CTA verbatim while inaccurately claiming that the caption was refined"
+  ],
+  "cross_stage_hypothesis": "Grounding constraints may degrade as upstream human-reviewed content is transformed by later model stages. The repeated pattern warrants further investigation; current evidence does not establish a conclusive root cause.",
+  "future_acceptance_target": {
+    "minimum_score_per_editorial_dimension": 3,
+    "unresolved_critical_claims": 0
+  },
+  "runtime_dependency": false,
+  "notes": "Preserve Run C as a failed editorial evaluation. Future prompt optimization is research backlog work and is not required for this human-reviewed handoff."
+}

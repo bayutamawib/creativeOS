@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import re
 import secrets
 from pathlib import Path
 from time import perf_counter
@@ -12,8 +13,9 @@ from fastapi import HTTPException
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
-from app.ai.contracts import PROMPT_VERSION, SCHEMAS, GenerationFailure, validate
+from app.ai.contracts import REPORT_PROMPT_VERSION, SCHEMAS, GenerationFailure, validate
 from app.ai.providers import adapter
+from app.ai.quality import assess as claim_assess
 from app.ai.reporting import grounded
 from app.brief_models import Brief, Snapshot
 from app.models import Client, ClientMembership, Project, User
@@ -23,6 +25,47 @@ from app.services import agency, studio
 
 DATASET = Path(__file__).parent / "datasets/creative-v1.json"
 SERVICES = ("brief_analysis", "creative_strategy", "content_plan", "copywriting", "report_summary")
+EVALUATION_PROMPT_VERSION = REPORT_PROMPT_VERSION  # Preserve the creative-eval-v1 baseline.
+
+
+def copy_review(output: dict[str, Any], ctx: dict[str, Any], feedback: str | None = None) -> dict[str, bool]:
+    """Detect literal reuse and checkable note errors, without calling it factual quality."""
+    source = ctx.get("revision") or ctx["plan_item"]
+    caption = source.get("caption") or source.get("draft_caption")
+    cta = source.get("call_to_action")
+    same_caption = output["caption"].strip() == caption
+    same_cta = output["call_to_action"].strip() == cta
+    instruction = feedback or ""
+    preserve = bool(re.search(r"\b(?:preserve|keep|retain|unchanged|verbatim)\b", instruction, re.I)) and not bool(
+        re.search(r"\b(?:do not|don't|avoid)\s+(?:preserve|keep|retain)\b", instruction, re.I)
+    )
+    improve = bool(re.search(r"\b(?:improve|revise|rewrite|polish|shorten|strengthen|change|alternative|different)\b", instruction, re.I))
+    notes = " ".join(output["revision_notes"])
+    inaccurate_notes = bool(
+        (same_caption and re.search(r"\b(?:updated|revised|rewrote|changed) (?:the )?caption\b", notes, re.I))
+        or (same_cta and re.search(r"\b(?:updated|revised|rewrote|changed) (?:the )?(?:CTA|call to action)\b", notes, re.I))
+        or (output["headline"].strip() == source.get("headline") and re.search(r"\b(?:updated|revised|rewrote|changed) (?:the )?headline\b", notes, re.I))
+        or (claim_assess("copywriting", output, ctx["brief"])["disposition"] == "critical" and re.search(r"\b(?:maintained|respected|complied with)\b.{0,40}\b(?:restriction|guideline|language)\b", notes, re.I))
+    )
+    return {
+        "verbatim_caption_and_cta": same_caption and same_cta,
+        "preservation_requested": preserve,
+        "improvement_requested": improve,
+        "editorial_change_detected": not (same_caption and same_cta),
+        "editorial_review_required": (improve and same_caption and same_cta and not preserve) or inaccurate_notes,
+        "revision_notes_accurate_on_checkable_claims": not inaccurate_notes,
+    }
+
+
+def direction_review(output: dict[str, Any]) -> dict[str, bool]:
+    """Catch duplicate narrative text; other distinctness needs human judgment."""
+    directions = output["creative_directions"]
+    narratives = [
+        (d["strategic_rationale"].strip().casefold(), d["audience_insight"].strip().casefold())
+        for d in directions
+    ]
+    repeated = len(narratives) != len(set(narratives))
+    return {"duplicate_narrative_detected": repeated, "distinctiveness_review_required": repeated}
 
 
 def assess(kind: str, output: dict[str, Any], ctx: dict[str, Any]) -> bool:
@@ -30,6 +73,8 @@ def assess(kind: str, output: dict[str, Any], ctx: dict[str, Any]) -> bool:
         grounded(ctx, output)
         return True
     b = ctx["brief"]
+    if claim_assess(kind, output, b)["disposition"] == "critical":
+        return False
     if kind == "brief_analysis":
         return bool(
             output["objective_summary"] == b["objective"]
@@ -45,16 +90,12 @@ def assess(kind: str, output: dict[str, Any], ctx: dict[str, Any]) -> bool:
             i["objective"] == b["objective"] and i["key_message"] == ctx["direction"]["key_message"]
             for i in output["content_plan"]
         )
-    return bool(
-        output["headline"] == ctx["plan_item"]["title"]
-        and output["caption"] == ctx["plan_item"]["draft_caption"]
-    )
+    return True
 
 
 def pipeline(key: UUID, b: dict[str, Any]) -> list[CaseResult]:
-    provider = adapter("fixture", PROMPT_VERSION)
+    provider = adapter("fixture", EVALUATION_PROMPT_VERSION)
     ctx: dict[str, Any] = {"brief": b}
-    params = {"channels": [b["channel"]], "target_count": 2}
     rows = []
     metrics = {
         "period": "Synthetic week",
@@ -63,6 +104,9 @@ def pipeline(key: UUID, b: dict[str, Any]) -> list[CaseResult]:
         "overdue_tasks": 1,
     }
     for kind in SERVICES:
+        params: dict[str, Any] = {"channels": [b["channel"]]}
+        if kind == "content_plan":
+            params["target_count"] = 2
         source = metrics if kind == "report_summary" else ctx
         prereq = {
             "creative_strategy": "analysis",
@@ -89,6 +133,10 @@ def pipeline(key: UUID, b: dict[str, Any]) -> list[CaseResult]:
                     k in output for k, v in SCHEMAS[kind].model_fields.items() if v.is_required()
                 )
                 checks["grounded"] = assess(kind, output, source)
+                if kind == "creative_strategy":
+                    checks.update(direction_review(output))
+                if kind == "copywriting":
+                    checks.update(copy_review(output, source))
             except GenerationFailure as failure:
                 checks["error"] = failure.code
         passed = all(checks[k] for k in ("schema", "required_fields", "grounded"))
@@ -239,7 +287,7 @@ def run(db: Session, actor: UUID) -> Evaluation:
         requested_by=actor,
         provider="fixture",
         model="fixture-v1",
-        prompt_version=PROMPT_VERSION,
+        prompt_version=EVALUATION_PROMPT_VERSION,
         dataset_version=data["version"],
         dataset_hash=digest,
         aggregates={},

@@ -1,6 +1,7 @@
 .env
 .env.*
 !.env.example
+/tmp/
 .DS_Store
 .venv/
 __pycache__/
@@ -24,3 +25,10 @@ test-results/
 pgdata/
 uploads/
 coverage/
+/creativeOS-uat-evidence/**/*.log
+/creativeOS-uat-evidence/**/*.har
+/creativeOS-uat-evidence/**/*.headers
+/creativeOS-uat-evidence/**/*.http
+
+# Temporary files
+/tmp/

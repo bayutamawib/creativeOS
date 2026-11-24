@@ -99,6 +99,10 @@ def test_release_delivery_revocation(browser, workspace, draft):
     owner, manager = browser("owner"), browser("manager")
     manager.post(url + "/submit-for-internal-review", json=rev)
     manager.post(url + "/approve-and-release", json=rev)
+    dashboard = owner.get(
+        "/api/v1/dashboard/client", params={"client_id": str(workspace["north"])}
+    ).json()["data"]
+    assert len(dashboard["pending_approvals"]) == 1
     with Session(engine()) as db, db.begin():
         event = db.scalar(
             select(Outbox).where(Outbox.event_type == "content.client_review_requested")

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ProjectThumbnail } from "@/components/media-card";
 import type { Project } from "@/lib/projects";
 export function ProjectList({
   rows,
@@ -20,27 +21,50 @@ export function ProjectList({
       : "?page=";
   return (
     <>
-      <ul className="divide-y divide-border">
+      <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {rows.map((row) => (
           <li
             key={row.id}
-            className="flex flex-wrap items-center justify-between gap-2 py-4"
+            className="min-w-0 overflow-hidden rounded-xl border border-border bg-white shadow-sm"
           >
-            <div>
-              <Link href={"/" + portal + "/projects/" + row.id}>
-                {row.name}
-              </Link>
-              <p className="text-sm text-slate-600">
-                {row.service_type && row.service_type + " · "}
-                {row.progress?.percent ?? 0}% complete
-                {row.next_milestone &&
-                  " · Next milestone: " + row.next_milestone}
-              </p>
-            </div>
-            <span>
-              {row.status.replaceAll("_", " ")} ·{" "}
-              {row.due_date || "No deadline"}
-            </span>
+            <Link
+              className="block"
+              aria-label={row.name}
+              href={"/" + portal + "/projects/" + row.id}
+            >
+              <ProjectThumbnail
+                id={row.cover_file_id}
+                video={Boolean(row.cover_video_id)}
+                name={row.name}
+                portal={portal === "admin" ? "agency" : "client"}
+              />
+              <div className="space-y-3 p-4">
+                {row.client_name && (
+                  <p className="text-xs font-medium text-slate-600">
+                    {row.client_name}
+                  </p>
+                )}
+                <h3 className="text-lg">{row.name}</h3>
+                <p className="text-sm text-slate-600">
+                  {row.status.replaceAll("_", " ")} ·{" "}
+                  {row.due_date || "No deadline"}
+                </p>
+                <progress
+                  className="h-2 w-full accent-indigo-600"
+                  value={row.progress?.percent ?? 0}
+                  max={100}
+                  aria-label={row.name + " progress"}
+                />
+                <p className="text-sm">
+                  {row.progress?.percent ?? 0}% complete
+                </p>
+                {row.next_milestone && (
+                  <p className="text-sm text-slate-600">
+                    Next milestone · {row.next_milestone}
+                  </p>
+                )}
+              </div>
+            </Link>
           </li>
         ))}
       </ul>

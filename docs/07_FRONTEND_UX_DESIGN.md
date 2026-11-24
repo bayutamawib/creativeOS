@@ -1297,3 +1297,15 @@ Implementation requirements:
 **The frontend should communicate the quality of a professional SaaS product while remaining practical to implement and maintain.**
 
 ![alt text](image.png) ![alt text](image-1.png)
+
+## CP8-A media galleries
+
+Both project lists render responsive cards with the authorized project name, status, deadline and released-milestone progress. Agency cards also display the client name. The newest accessible PNG or JPEG provides the cover. Projects without an accessible image use locally rendered gradient artwork. Existing search, status filters, pagination and project-management entry points stay available.
+
+Project detail pages share the Creative assets gallery. The existing upload contract accepts a project image and its visibility. Agency uploads default to internal. Client uploads are shared within their own organization. The gallery links to the existing file manager and downloads. Deliverable cards display the content title and exact revision number. Clients receive only released revision history and accessible file metadata.
+
+Image buttons open a native modal with a filename, revision context and Close preview action. Escape dismisses it and focus returns to the originating button. Thumbnail and enlarged-image requests go to the authenticated same-origin API with the selected portal. Images bypass shared optimization and caches. MediaCard owns file identity and preview behavior separately from project and review presentation, allowing a future supported media type to extend rendering. CP8-A supports PNG and JPEG.
+
+## CP8-B video media
+
+The project media uploader accepts a local MP4 up to the configured server limit, 50 MiB by default, and an optional manually selected PNG/JPEG cover. Agency users choose internal or client-visible scope; client uploads remain client-visible. Project cards show the newest accessible video cover with a play indicator, or gradient artwork with the same indicator when no cover exists. Project and exact revision galleries open native HTML5 video controls in a dialog with a Fullscreen action. The video source uses the authenticated same-origin stream route so browser seeking sends authorized Range requests. Closing the dialog stops the video element. The existing revision-specific release confirmation and client approval controls apply to video attachments. Browser codec support remains the playback boundary.

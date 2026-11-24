@@ -1,0 +1,113 @@
+{
+  "generation_id": "8702d0e8-0ca9-48f4-8eb6-19196905b924",
+  "project_id": "ec892082-9144-4124-bb02-1558c6e0cafb",
+  "brief_id": "4f196446-b330-413e-96d9-935a7616ad4a",
+  "snapshot_id": "82e27503-aec7-4b2b-b372-262bf5f99674",
+  "stage": "brief_analysis",
+  "status": "completed",
+  "attempt": 1,
+  "provider": "compatible",
+  "model": "openai/gpt-oss-20b",
+  "prompt_version": "creative-v1",
+  "schema_name": "Analysis",
+  "schema_version": "creative-v1 (shared contract; no separate schema version field)",
+  "validation_outcome": "passed_persisted_and_revalidated",
+  "input_tokens": 1124,
+  "output_tokens": 535,
+  "latency_ms": 1314,
+  "error_code": null,
+  "input_redacted": {
+    "brand": {
+      "industry": "Fictional seasonal produce",
+      "brand_name": "Morrow Orchard",
+      "guidelines": {
+        "guidance": "Fictional brand. Use only supplied brief facts. Keep language warm and observant. Do not state prices, nutrition, certifications, delivery dates, testimonials, or any unknown facts."
+      },
+      "company_name": "Morrow Orchard"
+    },
+    "brief": {
+      "title": "Morrow Orchard autumn fruit box waitlist",
+      "objective": "Create three content items that invite home cooks in the fictional Alder Vale service area to join a fictional waitlist for Morrow Orchard’s autumn fruit box. The goal is waitlist interest; no purchase or delivery is promised.",
+      "references": [],
+      "key_message": "An autumn fruit box brings seasonal variety and simple recipe inspiration to the kitchen. Interested home cooks can join the fictional waitlist to hear more.",
+      "content_type": "Three distinct content items: an Instagram carousel, an Instagram caption, and a Website waitlist section",
+      "restrictions": "Do not claim or imply a price, discount, nutritional benefit, certification, delivery date, shipping coverage, customer testimonial, stock level, exact fruit varieties, or any other unknown fact. Do not invent proof, quotes, or guarantees. Use a waitlist call to action only.",
+      "tone_of_voice": "Warm, observant, specific, and restrained",
+      "target_audience": "Home cooks in the fictional Alder Vale service area who enjoy using seasonal fruit in everyday recipes. Do not infer demographics, income, or dietary needs.",
+      "target_timeline": "Fictional autumn campaign; no publication or delivery date is confirmed",
+      "additional_context": "Morrow Orchard and Alder Vale are fictional. Available visual source categories for later human review: fruit close-ups, packing scenes, and recipe-card imagery. No actual media assets or rights are supplied. Keep each of the three items distinct and grounded in the stated brief. If a detail is unspecified, omit it or label it as an open question.",
+      "preferred_channels": [
+        "Instagram",
+        "Website"
+      ],
+      "requested_item_count": 3
+    },
+    "attachments": []
+  },
+  "parameters_redacted": {
+    "include": [],
+    "channels": [
+      "Instagram",
+      "Website"
+    ],
+    "feedback": null,
+    "temperature": 0.2,
+    "target_count": 3,
+    "max_output_tokens": 4096
+  },
+  "output_redacted": {
+    "key_themes": [
+      "Seasonal variety",
+      "Recipe inspiration",
+      "Community engagement",
+      "Waitlist invitation"
+    ],
+    "content_pillars": [
+      "Showcase seasonal fruit variety",
+      "Provide quick recipe ideas",
+      "Encourage waitlist sign‑ups",
+      "Maintain warm, observant tone"
+    ],
+    "potential_risks": [
+      "Misleading consumers about availability or delivery",
+      "Violating brand guidelines by implying pricing or nutrition",
+      "Overpromising benefits not supported by facts"
+    ],
+    "target_audience": {
+      "description": "Home cooks in the fictional Alder Vale service area who enjoy incorporating seasonal fruit into everyday recipes.",
+      "primary_needs": [
+        "Discover fresh seasonal fruit options",
+        "Find simple, inspiring recipes",
+        "Stay informed about upcoming autumn offerings"
+      ]
+    },
+    "objective_summary": "Create three distinct content items—a carousel, a caption, and a website section—to invite home cooks in Alder Vale to join Morrow Orchard’s fictional waitlist for an autumn fruit box, emphasizing seasonal variety and simple recipe inspiration while strictly avoiding any claims about price, nutrition, delivery, or testimonials.",
+    "missing_information": [
+      "Exact fruit varieties in the autumn box",
+      "Delivery dates or logistics",
+      "Pricing or discount details",
+      "Customer testimonials",
+      "Nutrition facts",
+      "Certification status"
+    ],
+    "creative_constraints": [
+      "Do not state prices, nutrition, certifications, delivery dates, shipping coverage, customer testimonials, stock levels, exact fruit varieties, or any unknown facts.",
+      "Do not invent proof, quotes, or guarantees.",
+      "Use only the supplied brief facts.",
+      "Keep language warm, observant, specific, and restrained.",
+      "Include only a waitlist call‑to‑action."
+    ]
+  },
+  "redaction_note": "Synthetic brief and output only; credentials, cookies, authorization headers, and transport logs excluded.",
+  "scores": {
+    "relevance": 5,
+    "specificity": 3,
+    "grounding": 2,
+    "distinctiveness": 2,
+    "actionability": 3
+  },
+  "critical_failure": "Unsupported wording in primary_needs: \"fresh seasonal fruit options\" implies freshness not established; \"upcoming autumn offerings\" suggests availability beyond the waitlist. \"Community engagement\" is an unsupported theme.",
+  "requires_revision": true,
+  "review_notes": "Analysis follows the campaign goal and restrictions, but content pillars include a tone instruction and a generic engagement theme. Missing-information list prioritizes prohibited claims instead of actionable gaps such as waitlist destination and confirmed media rights. Treat audience needs as hypotheses, not supplied facts.",
+  "preservation_note": "Sanitized synthetic UAT evidence. No credentials, raw authorization headers, cookies, environment values, or transport logs."
+}

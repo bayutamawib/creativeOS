@@ -1,0 +1,113 @@
+{
+  "artifact_type": "human_reviewed_stage2_handoff_proposal",
+  "artifact_version": "1.0",
+  "human_review_status": "pending_owner_approval",
+  "downstream_execution_authorized": false,
+  "model_generated": false,
+  "source_stage2_editorial_acceptance": "failed",
+  "source_stage2_evidence": "creativeOS-uat-evidence/phase2e-c/run-c/creative_strategy.json",
+  "source_stage2_sha256": "5499db92b32599719625d7e351db14efd8be8ce857a656016c329f368b781efa",
+  "authoritative_sources": {
+    "stage1_evidence": "creativeOS-uat-evidence/phase2e-c/run-a-retry/brief_analysis.json",
+    "stage1_sha256": "adb72931044d12b169de057f9b4ed0bbc66526a5a29b8759b21860117bf6416d",
+    "brief_evidence": "creativeOS-uat-evidence/phase2c/brief_analysis.json"
+  },
+  "preserved_brief_restrictions": "Do not claim or imply a price, discount, nutritional benefit, certification, delivery date, shipping coverage, customer testimonial, stock level, exact fruit varieties, or any other unknown fact. Do not invent proof, quotes, or guarantees. Use a waitlist call to action only.",
+  "proposed_output": {
+    "creative_directions": [
+      {
+        "concept_name": "Seasonal Storyline Carousel",
+        "strategic_rationale": "Use a proposed visual sequence to explore seasonal variety and recipe inspiration as an editorial journey. The narrative moves from a general seasonal-fruit close-up to a recipe-card concept and ends with a destination-neutral waitlist invitation. This direction focuses on visual exploration without presenting proposed imagery as box contents or confirmed assets.",
+        "key_message": "An autumn fruit box brings seasonal variety and simple recipe inspiration to the kitchen. Interested home cooks can join the waitlist to hear more.",
+        "audience_insight": "Hypothesis: home cooks in Alder Vale may appreciate a visual sequence that connects seasonal variety with simple recipe inspiration.",
+        "tone_of_voice": "Warm, observant, specific, and restrained",
+        "visual_direction": "Proposed assets: a general seasonal-fruit close-up, a packing-scene concept, and recipe-card imagery without named fruit or dishes. End with a destination-neutral 'Join the Waitlist' graphic. Asset availability and usage rights require confirmation before production.",
+        "suggested_channels": [
+          "Instagram"
+        ],
+        "risks": [
+          "Illustrative imagery could be mistaken for confirmed box contents; keep all fruit references general.",
+          "Assets and usage rights are not confirmed."
+        ]
+      },
+      {
+        "concept_name": "Warm Invitation Caption",
+        "strategic_rationale": "Use a quiet editorial observation about seasonal variety and everyday recipe inspiration. This direction emphasizes concise language and a restrained waitlist invitation rather than sensory product description or urgency.",
+        "key_message": "Seasonal variety and simple recipe inspiration can bring new ideas to everyday cooking. Interested home cooks can join the waitlist to hear more.",
+        "audience_insight": "Hypothesis: some Alder Vale home cooks may respond to a concise invitation centered on seasonal variety and practical recipe inspiration.",
+        "tone_of_voice": "Warm, observant, specific, and restrained",
+        "visual_direction": "Proposed asset: one general fruit close-up or recipe-card image, subject to availability and rights confirmation. The visual must not imply exact box contents, product attributes, or availability.",
+        "suggested_channels": [
+          "Instagram"
+        ],
+        "risks": [
+          "The caption must remain a waitlist invitation and must not imply purchase, availability, or delivery.",
+          "Assets and usage rights are not confirmed."
+        ]
+      },
+      {
+        "concept_name": "Kitchen Companion Section",
+        "strategic_rationale": "Use the Website section to clarify what is confirmed: the autumn fruit-box concept, seasonal variety, recipe inspiration, and an informational waitlist. This direction prioritizes clarity and expectation setting rather than conversion promises.",
+        "key_message": "An autumn fruit box brings seasonal variety and simple recipe inspiration to the kitchen. Interested home cooks can join the waitlist to hear more.",
+        "audience_insight": "Hypothesis: Website visitors may value a concise explanation of the concept and the limits of the informational waitlist.",
+        "tone_of_voice": "Warm, observant, specific, and restrained",
+        "visual_direction": "Proposed assets: general packing-scene or recipe-card imagery with availability and rights confirmation required. Include a destination-neutral 'Join the Waitlist' CTA concept; no form, URL, signup fields, or functional destination is assumed.",
+        "suggested_channels": [
+          "Website"
+        ],
+        "risks": [
+          "The CTA destination and implementation are unconfirmed.",
+          "The section must not imply availability, purchase, or delivery."
+        ]
+      }
+    ]
+  },
+  "exact_changes": [
+    {
+      "scope": "Seasonal Storyline Carousel strategic rationale and visuals",
+      "removed_or_replaced": [
+        "ripe fruit",
+        "apples",
+        "pears",
+        "figs",
+        "apple crumble",
+        "simmering sauce"
+      ],
+      "replacement": "General seasonal-fruit close-up, packing-scene concept, and recipe-card imagery",
+      "reason": "Remove unsupported sensory attributes, exact fruit varieties, and invented dish details while staying within the supplied visual source categories."
+    },
+    {
+      "scope": "All audience_insight fields",
+      "removed_or_replaced": [
+        "Audience motivations stated as established facts"
+      ],
+      "replacement": "Explicitly labeled Hypothesis statements using may language",
+      "reason": "No audience research was supplied."
+    },
+    {
+      "scope": "All visual_direction fields",
+      "removed_or_replaced": [
+        "Visuals described without consistent proposal status"
+      ],
+      "replacement": "Proposed asset language with availability and rights confirmation",
+      "reason": "The brief supplies visual categories but no actual media assets or rights."
+    },
+    {
+      "scope": "Kitchen Companion Section CTA and key message",
+      "removed_or_replaced": [
+        "Explore the flavors of autumn",
+        "Functional signup implication"
+      ],
+      "replacement": "Brief-grounded message and destination-neutral CTA concept with implementation explicitly unconfirmed",
+      "reason": "Avoid unsupported sensory language and operational assumptions."
+    },
+    {
+      "scope": "Narrative differentiation",
+      "removed_or_replaced": [
+        "Three directions distinguished primarily by format"
+      ],
+      "replacement": "Visual exploration, quiet editorial observation, and informational clarity",
+      "reason": "Provide distinct narrative purposes while preserving the three requested formats."
+    }
+  ]
+}

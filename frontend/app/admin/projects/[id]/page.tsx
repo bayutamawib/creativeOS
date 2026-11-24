@@ -1,3 +1,5 @@
+import { ProjectMedia } from "@/components/project-media";
+import type { ProjectActivityPage } from "@/components/project-activity";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getApi, requirePortal } from "@/lib/server-api";
@@ -11,23 +13,26 @@ import {
 } from "@/lib/projects";
 import {
   ProjectFields,
-  MilestoneFields,
-  TaskFields,
-  TaskCard,
 } from "@/components/project-controls";
 import { OperationForm } from "@/components/operation-form";
+import { ProjectTimeline } from "@/components/project-timeline";
+import type { TaskTemplate } from "@/components/task-template-application";
 export default async function Page({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ media_page?: string; activity_page?: string; timeline?: string }>;
 }) {
+  const query = await searchParams;
   const me = await requirePortal("admin"),
     manager = canManage(me.agency_roles),
     id = encodeURIComponent((await params).id),
     path = "/projects/" + id;
   const project = await getApi<Project>(path + "?portal=agency");
   if (!project) notFound();
-  const [stages, tasks, members, progress, staff] = await Promise.all([
+  const activityPage = Math.max(1, Number(query.activity_page) || 1);
+  const [stages, tasks, members, progress, staff, activity, templates] = await Promise.all([
     getApi<Milestone[]>(path + "/milestones?portal=agency"),
     getApi<Task[]>(path + "/tasks"),
     getApi<Person[]>(path + "/members"),
@@ -42,6 +47,10 @@ export default async function Page({
           }[]
         >("/agency/members")
       : null,
+    getApi<ProjectActivityPage>(
+      path + "/activity?portal=agency&page=" + activityPage + "&page_size=20",
+    ),
+    manager ? getApi<TaskTemplate[]>("/task-templates") : null,
   ]);
   const available =
     staff?.filter(
@@ -108,59 +117,28 @@ export default async function Page({
           </OperationForm>
         )}
       </section>
-      <section className="space-y-3">
-        <h3>Milestones</h3>
-        <p>
-          {progress?.completed_milestones} of {progress?.total_milestones}{" "}
-          complete · {progress?.percent}%
-        </p>
-        {stages?.map((s) => (
-          <div key={s.id}>
-            <strong>{s.name}</strong> · {s.status} ·{" "}
-            {s.client_visible ? "Released" : "Internal"}
-            {manager && (
-              <details>
-                <summary>Edit milestone</summary>
-                <OperationForm
-                  path={"/milestones/" + s.id}
-                  method="PATCH"
-                  label="Save milestone"
-                >
-                  <MilestoneFields stage={s} />
-                </OperationForm>
-              </details>
-            )}
-          </div>
-        ))}
-        {manager && (
-          <details>
-            <summary>Add milestone</summary>
-            <OperationForm path={path + "/milestones"} label="Create milestone">
-              <MilestoneFields />
-            </OperationForm>
-          </details>
-        )}
-      </section>
-      <section className="space-y-4">
-        <h3>Tasks</h3>
-        {manager && (
-          <details>
-            <summary>Add task</summary>
-            <OperationForm path={path + "/tasks"} label="Create task">
-              <TaskFields stages={stages || []} />
-            </OperationForm>
-          </details>
-        )}
-        {tasks?.map((t) => (
-          <TaskCard
-            key={t.id}
-            task={t}
-            manager={manager}
-            members={members || []}
-            stages={stages || []}
-          />
-        ))}
-      </section>
+      <p className="text-sm text-slate-600">
+        Milestones: {progress?.completed_milestones} of {progress?.total_milestones} complete · {progress?.percent}%
+      </p>
+      {activity && (
+        <ProjectTimeline
+          project={project}
+          tasks={tasks ?? []}
+          milestones={stages ?? []}
+          members={members ?? []}
+          activity={activity}
+          templates={templates ?? []}
+          manager={manager}
+          portal="agency"
+          tab={query.timeline === "history" ? "history" : "upcoming"}
+          mediaPage={query.media_page}
+        />
+      )}
+      <ProjectMedia
+        project={project.id}
+        portal="agency"
+        page={Math.max(1, Number(query.media_page) || 1)}
+      />
     </div>
   );
 }

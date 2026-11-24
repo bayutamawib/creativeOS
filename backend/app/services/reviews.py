@@ -188,12 +188,12 @@ def _views(
         histories[revision.content_item_id].append(revision)
         decisions[revision.id] = decision
     linked: dict[UUID, list[dict[str, Any]]] = defaultdict(list)
-    for rid, fid, name in db.execute(
-        select(RevisionFile.revision_id, FileAsset.id, FileAsset.file_name)
+    for rid, fid, name, mime, cover in db.execute(
+        select(RevisionFile.revision_id, FileAsset.id, FileAsset.file_name, FileAsset.mime_type, FileAsset.cover_file_id)
         .join(FileAsset, FileAsset.id == RevisionFile.file_id)
         .where(RevisionFile.revision_id.in_(list(decisions)))
     ):
-        linked[rid].append({"id": fid, "name": name})
+        linked[rid].append({"id": fid, "name": name, "mime_type": mime} | ({"cover_file_id": cover} if mime == "video/mp4" else {}))
     messages: dict[UUID, list[dict[str, Any]]] = defaultdict(list)
     notes = select(Feedback).where(Feedback.content_item_id.in_(keys))
     if portal == "client":

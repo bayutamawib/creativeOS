@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Annotated, Any
 from uuid import UUID
 
@@ -11,15 +12,20 @@ from app.project_inputs import (
     MilestoneCreate,
     MilestoneUpdate,
     Portal,
+    Priority,
     ProjectCreate,
     ProjectUpdate,
     TaskAssignment,
     TaskCreate,
+    TaskStatus,
+    TaskTemplateApply,
     TaskUpdate,
 )
 from app.project_models import Milestone, Task, TaskAssignee
+from app.security import now
 from app.services import projects, tasks
 from app.services.agency import manager_roles
+from app.services.reminders import day
 
 router = APIRouter()
 Page = Annotated[int, Query(ge=1)]
@@ -50,7 +56,7 @@ def listing(
         .offset((page - 1) * page_size)
         .limit(page_size)
     )
-    return {"data": projects.list_view(db, rows.all(), role)}
+    return {"data": projects.list_view(db, rows.all(), role, identity.user_id)}
 
 
 @router.post("/projects", status_code=201)
@@ -91,6 +97,23 @@ def progress(
     role = projects.effective_portal(db, identity.user_id, portal)
     projects.access(db, identity.user_id, project_id, role)
     return {"data": projects.progress(db, project_id, role)}
+
+
+@router.get("/projects/{project_id}/activity")
+def activity(
+    project_id: UUID,
+    db: Database,
+    identity: Identity,
+    portal: Portal | None = None,
+    page: Page = 1,
+    page_size: PageSize = 20,
+) -> dict[str, Any]:
+    role = projects.effective_portal(db, identity.user_id, portal)
+    return {
+        "data": projects.activity(
+            db, identity.user_id, project_id, role, page, page_size
+        )
+    }
 
 
 @router.get("/projects/{project_id}/members")
@@ -162,21 +185,50 @@ def project_tasks(project_id: UUID, db: Database, identity: Identity) -> dict[st
 def all_tasks(
     db: Database,
     identity: Identity,
+    project_id: UUID | None = None,
+    status: TaskStatus | None = None,
+    priority: Priority | None = None,
     assignee_id: UUID | None = None,
+    due_from: date | None = None,
+    due_to: date | None = None,
+    overdue: bool | None = None,
     page: Page = 1,
     page_size: PageSize = 50,
 ) -> dict[str, Any]:
     stmt = tasks.task_scope(db, identity.user_id)
+    if due_from and due_to and due_from > due_to:
+        raise HTTPException(422, "Due-from date must not follow due-through date")
+    if project_id:
+        stmt = stmt.where(Task.project_id == project_id)
+    if status:
+        stmt = stmt.where(Task.status == status)
+    if priority:
+        stmt = stmt.where(Task.priority == priority)
     if assignee_id:
         stmt = stmt.where(
             Task.id.in_(select(TaskAssignee.task_id).where(TaskAssignee.user_id == assignee_id))
+        )
+    if due_from:
+        stmt = stmt.where(Task.due_date >= due_from)
+    if due_to:
+        stmt = stmt.where(Task.due_date <= due_to)
+    today = day(now())
+    if overdue is True:
+        stmt = stmt.where(
+            Task.due_date < today, Task.status.notin_(["completed", "cancelled"])
+        )
+    elif overdue is False:
+        stmt = stmt.where(
+            Task.due_date.is_(None)
+            | (Task.due_date >= today)
+            | Task.status.in_(["completed", "cancelled"])
         )
     rows = db.scalars(
         stmt.order_by(Task.due_date.nulls_last(), Task.id)
         .offset((page - 1) * page_size)
         .limit(page_size)
     )
-    return {"data": tasks.views(db, rows.all())}
+    return {"data": tasks.views(db, rows.all(), today=today)}
 
 
 @router.post("/projects/{project_id}/tasks", status_code=201)
@@ -184,6 +236,23 @@ def add_task(
     project_id: UUID, data: TaskCreate, db: Database, identity: Identity
 ) -> dict[str, Any]:
     return {"data": tasks.view(db, tasks.create(db, identity.user_id, project_id, data))}
+
+
+@router.get("/task-templates")
+def task_templates(db: Database, identity: Identity) -> dict[str, Any]:
+    manager_roles(db, identity.user_id)
+    return {"data": tasks.template_catalog()}
+
+
+@router.post("/projects/{project_id}/task-templates/apply", status_code=201)
+def apply_task_template(
+    project_id: UUID, data: TaskTemplateApply, db: Database, identity: Identity
+) -> dict[str, Any]:
+    return {
+        "data": tasks.views(
+            db, tasks.apply_template(db, identity.user_id, project_id, data)
+        )
+    }
 
 
 @router.get("/tasks/{task_id}")
